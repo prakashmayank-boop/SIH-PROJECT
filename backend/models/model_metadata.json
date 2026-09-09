@@ -1,0 +1,32 @@
+{
+  "model_name": "UFIS-RandomForest-HydrodynamicDepthRegressor",
+  "version": "1.0.0",
+  "trained_at": "2026-09-09T20:10:51.968486Z",
+  "data_source": "synthetic_hydrodynamic_corpus_v1",
+  "n_samples": 3500,
+  "metrics": {
+    "r2_score": 0.9555,
+    "mae_cm": 0.96,
+    "rmse_cm": 1.28
+  },
+  "features": [
+    "rainfall_intensity_mmh",
+    "accumulated_rain_2h_mm",
+    "elevation_m",
+    "depression_depth_m",
+    "impervious_percent",
+    "upstream_node_surcharge_m3s",
+    "pipe_capacity_ratio",
+    "road_slope_percent"
+  ],
+  "feature_importances": {
+    "rainfall_intensity_mmh": 0.7036,
+    "upstream_node_surcharge_m3s": 0.1365,
+    "pipe_capacity_ratio": 0.104,
+    "accumulated_rain_2h_mm": 0.0281,
+    "road_slope_percent": 0.012,
+    "impervious_percent": 0.008,
+    "elevation_m": 0.0064,
+    "depression_depth_m": 0.0015
+  }
+}

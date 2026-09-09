@@ -1,0 +1,515 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { TopBar } from './components/TopBar';
+import { KpiRibbon } from './components/KpiRibbon';
+import { MapGIS } from './components/MapGIS';
+import { TimeSlider } from './components/TimeSlider';
+import { InspectorPanel } from './components/InspectorPanel';
+import { SafeRoutingModal } from './components/SafeRoutingModal';
+import { TaskModal } from './components/TaskModal';
+import { ReportFloodModal } from './components/ReportFloodModal';
+import { LoginPage } from './components/LoginPage';
+import { LoginModal } from './components/LoginModal';
+import { WhatIfSimulatorModal } from './components/WhatIfSimulatorModal';
+import { SmsBroadcastModal } from './components/SmsBroadcastModal';
+import { ToastProvider, useToast } from './components/Toast';
+import { TabViews } from './components/Views';
+import { apiService } from './services/api';
+import type {
+  HorizonStep,
+  RoadFeature,
+  DrainageNode,
+  DrainageEdge,
+  ForecastSummary,
+  AlertItem,
+  DispatchTaskItem,
+  SafeRouteResult,
+  FloodReportItem
+} from './types';
+import { AlertCircle, RotateCcw } from 'lucide-react';
+
+const UFISDashboard: React.FC = () => {
+  const { addToast } = useToast();
+
+  // Authentication State
+  const [user, setUser] = useState<any>(() => {
+    const saved = localStorage.getItem('ufis_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Navigation & View State
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [currentHorizon, setCurrentHorizon] = useState<HorizonStep>('NOW');
+  const [activeScenario, setActiveScenario] = useState<string>('monsoon_65');
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  // Map Size Toggle: 'full' | 'compact'
+  const [mapSize, setMapSize] = useState<'full' | 'compact'>('full');
+
+  // Data States
+  const [summary, setSummary] = useState<ForecastSummary | null>(null);
+  const [roads, setRoads] = useState<RoadFeature[]>([]);
+  const [nodes, setNodes] = useState<DrainageNode[]>([]);
+  const [edges, setEdges] = useState<DrainageEdge[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [tasks, setTasks] = useState<DispatchTaskItem[]>([]);
+  const [activeRoute, setActiveRoute] = useState<SafeRouteResult | null>(null);
+  const [floodReports, setFloodReports] = useState<FloodReportItem[]>([]);
+
+  // Selection & Inspector States
+  const [selectedRoad, setSelectedRoad] = useState<RoadFeature | null>(null);
+  const [selectedNode, setSelectedNode] = useState<DrainageNode | null>(null);
+  const [isInspectorCollapsed, setIsInspectorCollapsed] = useState<boolean>(false);
+
+  // Modals
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isRoutingModalOpen, setIsRoutingModalOpen] = useState<boolean>(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState<boolean>(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [isWhatIfModalOpen, setIsWhatIfModalOpen] = useState<boolean>(false);
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState<boolean>(false);
+  const [selectedAlertForSms, setSelectedAlertForSms] = useState<AlertItem | undefined>(undefined);
+  const [taskTargetNode, setTaskTargetNode] = useState<DrainageNode | null>(null);
+
+  // UI Flow States: LOADING, SUCCESS, ERROR
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Layer Visibility
+  const [layerVisibility, setLayerVisibility] = useState({
+    roads: true,
+    drainage: true,
+    nodes: true,
+    sensors: true
+  });
+
+  // Fetch all live data for the given horizon
+  const loadData = useCallback(async (horizon: HorizonStep, isSilent: boolean = false) => {
+    if (!isSilent) setLoading(true);
+    setError(null);
+    try {
+      const [sumRes, fcastRes, drainRes, alertsRes, tasksRes, reportsRes] = await Promise.all([
+        apiService.getForecastSummary(horizon),
+        apiService.getFloodForecast(horizon),
+        apiService.getDrainageStatus(horizon),
+        apiService.getAlerts(),
+        apiService.getTasks(),
+        apiService.getFloodReports().catch(() => [] as FloodReportItem[]) // graceful degradation
+      ]);
+
+      setSummary(sumRes);
+      setRoads(fcastRes.features);
+      setNodes(drainRes.nodes);
+      setEdges(drainRes.edges);
+      setAlerts(alertsRes);
+      setTasks(tasksRes);
+      setFloodReports(reportsRes);
+    } catch (err: any) {
+      console.error(err);
+      const msg = 'Failed to connect to UFIS Prediction Engine. Please check backend status.';
+      setError(msg);
+      addToast({
+        type: 'error',
+        title: 'Connection Error',
+        message: msg
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [addToast]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      loadData(currentHorizon);
+    }
+  }, [loadData, currentHorizon, user]);
+
+  // Horizon Progression Timeline Player
+  useEffect(() => {
+    let interval: any = null;
+    if (isPlaying) {
+      const sequence: HorizonStep[] = ['NOW', '+30m', '+1h', '+2h', '+3h'];
+      interval = setInterval(() => {
+        setCurrentHorizon(prev => {
+          const idx = sequence.indexOf(prev);
+          const next = sequence[(idx + 1) % sequence.length];
+          return next;
+        });
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  // Scenario Switcher
+  const handleScenarioChange = async (scenarioId: string) => {
+    setActiveScenario(scenarioId);
+    setRefreshing(true);
+    try {
+      await apiService.switchScenario(scenarioId);
+      await loadData(currentHorizon, true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Actions
+  const handleAcknowledgeAlert = async (alertId: string) => {
+    try {
+      await apiService.updateAlertStatus(alertId, 'ACKNOWLEDGED');
+      setAlerts(prev =>
+        prev.map(a => (a.alert_id === alertId ? { ...a, status: 'ACKNOWLEDGED' } : a))
+      );
+      addToast({
+        type: 'success',
+        title: 'Alert Acknowledged',
+        message: 'Hazard notification logged by emergency control room.'
+      });
+    } catch (err) {
+      console.error(err);
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Could not update alert status on server.'
+      });
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      await apiService.completeTask(taskId, 'no visible issue', 'Inspection verified normal hydraulic throughput.');
+      setTasks(prev =>
+        prev.map(t => (t.task_id === taskId ? { ...t, status: 'COMPLETED' } : t))
+      );
+      addToast({
+        type: 'success',
+        title: 'Task Completed',
+        message: 'Field crew report filed and inspection closed.'
+      });
+    } catch (err) {
+      console.error(err);
+      addToast({
+        type: 'error',
+        title: 'Task Update Failed',
+        message: 'Could not complete task on server.'
+      });
+    }
+  };
+
+  const handleSelectRoad = (road: RoadFeature) => {
+    setSelectedRoad(road);
+    setSelectedNode(null);
+    setIsInspectorCollapsed(false);
+  };
+
+  const handleSelectNode = (node: DrainageNode) => {
+    setSelectedNode(node);
+    setSelectedRoad(null);
+    setIsInspectorCollapsed(false);
+  };
+
+  const unreadAlertsCount = alerts.filter(a => a.status === 'GENERATED').length;
+
+  // Gated Authentication Screen - Rendered after all hooks have executed
+  if (!user) {
+    return <LoginPage onLoginSuccess={(loggedUser) => setUser(loggedUser)} />;
+  }
+
+  // Whether to show the inspector panel: hide in full GIS Workbench mode
+  const showInspector = activeTab === 'dashboard' || (!!selectedRoad || !!selectedNode);
+  const isGisWorkbench = activeTab === 'map';
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#081425] text-[#d8e3fb]">
+      {/* 1. Left Sidebar Navigation */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        openRoutingModal={() => setIsRoutingModalOpen(true)}
+        openReportModal={() => setIsReportModalOpen(true)}
+        openWhatIfSimulator={() => setIsWhatIfModalOpen(true)}
+        unreadAlertCount={unreadAlertsCount}
+      />
+
+      {/* 2. Main Dashboard & Map Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top Navigation Bar */}
+        <TopBar
+          activeScenario={activeScenario}
+          onScenarioChange={handleScenarioChange}
+          onRefresh={() => {
+            setRefreshing(true);
+            loadData(currentHorizon, true);
+          }}
+          isRefreshing={refreshing}
+          unreadAlertsCount={unreadAlertsCount}
+          user={user}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+          onLogout={() => {
+            localStorage.removeItem('ufis_token');
+            localStorage.removeItem('ufis_user');
+            setUser(null);
+          }}
+        />
+
+        {/* Global Error State with Retry Button */}
+        {error && (
+          <div className="p-3 bg-[#ef4444]/20 border-b border-[#ef4444]/40 flex items-center justify-between px-6 text-xs text-white">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="text-[#ef4444]" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => loadData(currentHorizon)}
+              className="btn-primary text-xs py-1 px-3"
+            >
+              <RotateCcw size={12} />
+              Retry Connection
+            </button>
+          </div>
+        )}
+
+        {/* Top Metric Ribbon (Shown on Command Center view only to maximize Web GIS canvas) */}
+        {activeTab === 'dashboard' && (
+          <KpiRibbon summary={summary} loading={loading && !summary} />
+        )}
+
+        {/* Core View Area */}
+        <div className="flex-1 relative flex overflow-hidden">
+          {activeTab === 'dashboard' || isGisWorkbench ? (
+            // Map & GIS area — flex-col when compact
+            <div className={`relative flex-1 flex flex-col h-full overflow-hidden`}>
+              {/* Map container — full height in 'full' mode, 380px in 'compact' */}
+              <div
+                className="relative w-full flex-shrink-0 transition-all duration-300"
+                style={{ height: mapSize === 'compact' ? '380px' : '100%', flex: mapSize === 'compact' ? 'none' : '1' }}
+              >
+                <MapGIS
+                  roads={roads}
+                  nodes={nodes}
+                  edges={edges}
+                  activeRoute={activeRoute}
+                  floodReports={floodReports}
+                  onSelectRoad={handleSelectRoad}
+                  onSelectNode={handleSelectNode}
+                  onClearRoute={() => setActiveRoute(null)}
+                  layerVisibility={layerVisibility}
+                  setLayerVisibility={setLayerVisibility}
+                  isFullGisMode={isGisWorkbench}
+                  mapSize={mapSize}
+                  onToggleMapSize={() => setMapSize(prev => prev === 'full' ? 'compact' : 'full')}
+                />
+
+                {/* Floating Time Scrubber */}
+                <TimeSlider
+                  currentHorizon={currentHorizon}
+                  onChangeHorizon={setCurrentHorizon}
+                  isPlaying={isPlaying}
+                  onTogglePlay={() => setIsPlaying(prev => !prev)}
+                />
+
+                {/* Back to Dashboard Button — only shown in full GIS / map tab */}
+                {isGisWorkbench && (
+                  <button
+                    onClick={() => setActiveTab('dashboard')}
+                    className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+                    style={{
+                      zIndex: 1001,
+                      background: 'rgba(13,24,41,0.92)',
+                      border: '1px solid rgba(16,185,129,0.4)',
+                      color: '#10b981',
+                      backdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.5)'
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                    Back to Dashboard
+                  </button>
+                )}
+              </div>
+
+              {/* Compact Mode: Hydrodynamic Summary table below the map */}
+              {mapSize === 'compact' && summary && (
+                <div className="flex-1 overflow-y-auto bg-[#081425] border-t border-[rgba(255,255,255,0.08)] p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#86948a] mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse inline-block" />
+                    Hydrodynamic Spatial Summary — {summary.horizon}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {[
+                      { label: 'Flood Risk Index', value: `${summary.flood_risk_index}/100`, color: summary.flood_risk_index > 70 ? '#ef4444' : summary.flood_risk_index > 40 ? '#f59e0b' : '#10b981' },
+                      { label: 'Peak Depth', value: `${summary.max_predicted_depth_cm} cm`, color: '#38bdf8' },
+                      { label: 'Critical Roads', value: `${summary.critical_road_count}`, color: '#f59e0b' },
+                      { label: 'Surcharged Nodes', value: `${summary.surcharged_node_count}`, color: '#a78bfa' },
+                      { label: 'Rainfall', value: `${summary.rainfall_mmph} mm/h`, color: '#38bdf8' },
+                      { label: 'Highest Risk Area', value: summary.highest_risk_area, color: '#ef4444' },
+                      { label: 'Peak Flood Time', value: summary.peak_flood_time, color: '#f59e0b' },
+                      { label: 'Confidence', value: `${Math.round(summary.confidence_score * 100)}%`, color: '#10b981' },
+                    ].map(item => (
+                      <div key={item.label} className="glass-panel p-3">
+                        <div className="text-[10px] text-[#86948a] uppercase tracking-wider mb-1">{item.label}</div>
+                        <div className="text-sm font-bold" style={{ color: item.color }}>{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Flood incident reports summary */}
+                  {floodReports.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#f59e0b] mb-2 flex items-center gap-2">
+                        <AlertCircle size={12} /> Live Citizen Reports ({floodReports.length})
+                      </div>
+                      <div className="space-y-1.5">
+                        {floodReports.slice(0, 5).map(r => (
+                          <div key={r.report_id} className="glass-panel px-3 py-2 flex items-center justify-between gap-4 text-[11px]">
+                            <span className="text-white truncate">{r.description}</span>
+                            <span className={`font-bold shrink-0 ${
+                              r.severity === 'CRITICAL' ? 'text-[#ef4444]'
+                              : r.severity === 'HIGH' ? 'text-[#f59e0b]'
+                              : 'text-[#10b981]'
+                            }`}>{r.severity}</span>
+                            <span className="text-[#64748b] font-mono shrink-0">{r.depth_cm}cm</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <TabViews
+              activeTab={activeTab}
+              nodes={nodes}
+              edges={edges}
+              tasks={tasks}
+              currentHorizon={currentHorizon}
+              onCompleteTask={handleCompleteTask}
+              onSelectNode={handleSelectNode}
+              alerts={alerts}
+              onAcknowledgeAlert={handleAcknowledgeAlert}
+            />
+          )}
+
+          {/* 3. Right Collapsible Inspector Panel
+              — Hidden in GIS Workbench mode to give map 100% width */}
+          {!isGisWorkbench && showInspector && (
+            <InspectorPanel
+              alerts={alerts}
+              selectedRoad={selectedRoad}
+              selectedNode={selectedNode}
+              onClearSelection={() => {
+                setSelectedRoad(null);
+                setSelectedNode(null);
+              }}
+              onAcknowledgeAlert={handleAcknowledgeAlert}
+              onCreateTaskForNode={node => {
+                setTaskTargetNode(node);
+                setIsTaskModalOpen(true);
+              }}
+              onFindRouteForRoad={_road => {
+                setIsRoutingModalOpen(true);
+              }}
+              onOpenSmsModal={(alert) => {
+                setSelectedAlertForSms(alert);
+                setIsSmsModalOpen(true);
+              }}
+              isCollapsed={isInspectorCollapsed}
+              onToggleCollapse={() => setIsInspectorCollapsed(prev => !prev)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Login Authentication Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={(loggedUser) => setUser(loggedUser)}
+      />
+
+      {/* Dynamic Flood-Aware Routing Modal */}
+      <SafeRoutingModal
+        isOpen={isRoutingModalOpen}
+        onClose={() => setIsRoutingModalOpen(false)}
+        onApplyRoute={route => {
+          setActiveRoute(route);
+          setActiveTab('dashboard');
+        }}
+        currentHorizon={currentHorizon}
+      />
+
+      {/* Field Inspection Dispatch Modal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        targetNode={taskTargetNode}
+        onTaskCreated={() => {
+          addToast({
+            type: 'success',
+            title: 'Task Dispatched',
+            message: `Field crew en route to inspect ${taskTargetNode?.node_code || 'drainage asset'}.`
+          });
+          loadData(currentHorizon, true);
+        }}
+      />
+
+      {/* Citizen / Officer Flood Report Modal */}
+      <ReportFloodModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onReportSubmitted={() => {
+          addToast({
+            type: 'info',
+            title: 'Report Submitted',
+            message: 'Street flooding report ingested into live nowcast engine.'
+          });
+          loadData(currentHorizon, true);
+        }}
+      />
+
+      {/* What-If Scenario Simulator */}
+      <WhatIfSimulatorModal
+        isOpen={isWhatIfModalOpen}
+        onClose={() => setIsWhatIfModalOpen(false)}
+        currentHorizon={currentHorizon}
+        onSimulationApplied={() => {
+          addToast({
+            type: 'info',
+            title: 'Simulation Applied',
+            message: 'Live GIS map updated with simulated precipitation parameters.'
+          });
+          setRefreshing(true);
+          loadData(currentHorizon, true);
+        }}
+      />
+
+      {/* Emergency SMS Broadcast Modal */}
+      <SmsBroadcastModal
+        isOpen={isSmsModalOpen}
+        onClose={() => setIsSmsModalOpen(false)}
+        alert={selectedAlertForSms}
+        onSmsSent={() => {
+          addToast({
+            type: 'success',
+            title: 'SMS Dispatched',
+            message: 'Emergency SMS notification dispatched to carrier gateway.'
+          });
+        }}
+      />
+    </div>
+  );
+};
+
+export const App: React.FC = () => (
+  <ToastProvider>
+    <UFISDashboard />
+  </ToastProvider>
+);
+
+export const AppWithProviders = App;
+export default App;
