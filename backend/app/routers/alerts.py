@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+from typing import Optional
+from pydantic import BaseModel
 from backend.app.database import get_db
 from backend.app.models.schemas_v1 import Alert, DrainageNode, DrainageEdge, RoadSegment
 from backend.app.schemas.pydantic_models import AlertStatusUpdate
 from backend.app.services.hydraulic_engine import calculate_hydraulic_state, calculate_road_flood_depths
+from backend.app.services.sms_service import sms_service
+from backend.app.config import settings
 
 router = APIRouter(prefix="/api/v1/alerts", tags=["Alerts"])
 
@@ -120,8 +124,8 @@ def update_alert_status(
         # Create DB record if dynamic alert was acknowledged
         alert = Alert(
             alert_id=alert_id,
-            tenant_id="tenant-bbmp-01",
-            city_id="city-blr-01",
+            tenant_id=settings.DEFAULT_TENANT_ID,
+            city_id=settings.DEFAULT_CITY_ID,
             severity="CRITICAL",
             title=f"Alert {alert_id}",
             message="Dynamic early warning alert",
@@ -144,9 +148,6 @@ def update_alert_status(
         "message": f"Alert state transitioned to {alert.status}"
     }
 
-from pydantic import BaseModel
-from typing import Optional
-from backend.app.services.sms_service import sms_service
 
 class SMSBroadcastRequest(BaseModel):
     alert_id: Optional[str] = "ALERT-STBED"

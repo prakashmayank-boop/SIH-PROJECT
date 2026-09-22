@@ -2,11 +2,30 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
 from backend.app.models.schemas_v1 import RoadSegment, DrainageNode, DrainageEdge
+import backend.app.services.hydraulic_engine as he
 from backend.app.services.hydraulic_engine import (
     calculate_hydraulic_state, calculate_road_flood_depths, get_current_rainfall
 )
+from backend.app.services.cache import hydraulic_cache
 
 router = APIRouter(prefix="/api/v1", tags=["Forecast"])
+
+def get_hydraulic_and_roads(db: Session, horizon: str):
+    """Retrieve or compute cached coupled hydrodynamic state and road flood depths."""
+    cache_key = f"hydro_{he.active_scenario_id}_{he.custom_intensity_override}_{horizon}"
+    cached = hydraulic_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    nodes = db.query(DrainageNode).all()
+    edges = db.query(DrainageEdge).all()
+    roads = db.query(RoadSegment).all()
+
+    hydraulic_state = calculate_hydraulic_state(nodes, edges, horizon_step=horizon)
+    road_depths = calculate_road_flood_depths(roads, hydraulic_state, horizon_step=horizon)
+
+    hydraulic_cache.set(cache_key, (hydraulic_state, road_depths), ttl=5.0)
+    return (hydraulic_state, road_depths)
 
 def compute_risk_primary_cause(attributions: dict) -> str:
     if not attributions:
@@ -48,12 +67,7 @@ def get_flood_forecast(
     db: Session = Depends(get_db)
 ):
     horizon = normalize_horizon(horizon)
-    nodes = db.query(DrainageNode).all()
-    edges = db.query(DrainageEdge).all()
-    roads = db.query(RoadSegment).all()
-
-    hydraulic_state = calculate_hydraulic_state(nodes, edges, horizon_step=horizon)
-    road_depths = calculate_road_flood_depths(roads, hydraulic_state, horizon_step=horizon)
+    hydraulic_state, road_depths = get_hydraulic_and_roads(db, horizon)
 
     # Convert to GeoJSON FeatureCollection
     features = []
@@ -99,12 +113,7 @@ def get_forecast_summary(
     db: Session = Depends(get_db)
 ):
     horizon = normalize_horizon(horizon)
-    nodes = db.query(DrainageNode).all()
-    edges = db.query(DrainageEdge).all()
-    roads = db.query(RoadSegment).all()
-
-    hydraulic_state = calculate_hydraulic_state(nodes, edges, horizon_step=horizon)
-    road_depths = calculate_road_flood_depths(roads, hydraulic_state, horizon_step=horizon)
+    hydraulic_state, road_depths = get_hydraulic_and_roads(db, horizon)
 
     max_depth = max([r["predicted_depth_cm"] for r in road_depths], default=0.0)
     critical_roads = sum(1 for r in road_depths if r["risk_level"] in ["High", "Critical"])

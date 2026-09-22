@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ufis-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET_KEY=ufis_sih_2026_jwt_secret_key_super_secure_change_in_prod
+      - ALLOWED_ORIGINS=["http://localhost", "http://localhost:80", "http://localhost:5173", "http://127.0.0.1"]
+      - DATABASE_URL=sqlite:////app/db/ufis_floodsense.db
+    volumes:
+      - ufis_data:/app/db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ufis-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  ufis_data:

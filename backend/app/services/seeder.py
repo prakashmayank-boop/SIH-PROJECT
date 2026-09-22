@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from backend.app.database import SessionLocal, Base, engine
 from backend.app.models.schemas_v1 import (
@@ -7,10 +8,34 @@ from backend.app.models.schemas_v1 import (
 )
 from backend.app.config import settings
 
-def seed_database(force_refresh_topology: bool = True):
+logger = logging.getLogger("ufis.seeder")
+
+# Topology version — bump this string when drainage/road topology changes.
+# If this matches the stored version in DB, skip the expensive data wipe+reseed.
+TOPOLOGY_VERSION = "v2026-09-22"
+
+def seed_database(force_refresh_topology: bool = False):
+    """Seed the database with initial Koramangala Ward 151 data.
+    
+    The topology (drainage nodes, edges, road segments, sensors) is only
+    refreshed when `force_refresh_topology=True` OR when the stored
+    topology version in the DB differs from TOPOLOGY_VERSION.
+    This prevents wiping user-generated data (tasks, flood reports) on
+    every server restart.
+    """
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+    try:
+        _do_seed(db, force_refresh_topology)
+    except Exception as exc:
+        logger.error(f"Seeder failed: {exc}", exc_info=True)
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
+
+def _do_seed(db, force_refresh_topology: bool = False):
     # 1. Tenant
     tenant = db.query(Tenant).filter_by(tenant_id=settings.DEFAULT_TENANT_ID).first()
     if not tenant:
@@ -64,7 +89,25 @@ def seed_database(force_refresh_topology: bool = True):
         db.add(zone)
         db.flush()
 
-    # Clear existing drainage elements & sensors & roads to allow clean topology update
+    # ── Topology refresh guard ──────────────────────────────────────────────
+    # Check if seeded topology version matches current TOPOLOGY_VERSION.
+    # Only wipe + re-seed if versions differ or force_refresh_topology=True.
+    tenant_settings = tenant.settings or {}
+    stored_version = tenant_settings.get("topology_version")
+    existing_node_count = db.query(DrainageNode).count()
+
+    needs_refresh = (
+        force_refresh_topology
+        or existing_node_count == 0
+        or stored_version != TOPOLOGY_VERSION
+    )
+
+    if not needs_refresh:
+        logger.info(f"Topology already at version {TOPOLOGY_VERSION} — skipping data wipe.")
+        return
+
+    logger.info(f"Refreshing topology to version {TOPOLOGY_VERSION}...")
+    # Clear existing drainage elements & sensors & roads for clean topology update
     db.query(SensorReading).delete()
     db.query(Sensor).delete()
     db.query(MonitoringSite).delete()
@@ -463,9 +506,13 @@ def seed_database(force_refresh_topology: bool = True):
     )
     db.add(task)
 
+    # Stamp topology version into tenant settings
+    updated_settings = dict(tenant.settings or {})
+    updated_settings["topology_version"] = TOPOLOGY_VERSION
+    tenant.settings = updated_settings
+
     db.commit()
-    db.close()
-    print("UFIS Database successfully seeded with Koramangala Ward 151 data!")
+    logger.info(f"UFIS Database successfully seeded with Koramangala Ward 151 data! (topology {TOPOLOGY_VERSION})")
 
 if __name__ == "__main__":
     seed_database()

@@ -1,44 +1,100 @@
+import os
 import hashlib
-import hmac
 import base64
-import json
-import time
+import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+try:
+    import jwt as pyjwt  # PyJWT
+    _PYJWT_AVAILABLE = True
+except ImportError:
+    _PYJWT_AVAILABLE = False
+    import hmac
+    import json
+    import time
 
 from backend.app.database import get_db
 from backend.app.models.schemas_v1 import User
 from backend.app.config import settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
-import os
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "ufis_sih_2026_jwt_secret_key_super_secure")
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "ufis_sih_2026_jwt_secret_key_super_secure_change_in_prod")
+ALGORITHM = "HS256"
+TOKEN_EXPIRE_SECONDS = 86400  # 24 hours
 
-def hash_password(password: str) -> str:
-    salt = "ufis_salt"
-    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
-    return base64.b64encode(key).decode('utf-8')
+# ---------------------------------------------------------------------------
+# Password hashing — per-user random salt (PBKDF2-SHA256, 260000 iterations)
+# Stored format: "salt$hash" (both base64-encoded)
+# ---------------------------------------------------------------------------
 
-def create_jwt_token(data: dict, expires_in_seconds: int = 86400) -> str:
-    header = {"alg": "HS256", "typ": "JWT"}
-    payload = data.copy()
-    payload["exp"] = int(time.time()) + expires_in_seconds
-    
-    header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
-    payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
-    
-    signature_input = f"{header_b64}.{payload_b64}"
-    signature = hmac.new(SECRET_KEY.encode(), signature_input.encode(), hashlib.sha256).digest()
-    signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
-    
-    return f"{header_b64}.{payload_b64}.{signature_b64}"
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    """Return 'salt$hash' string. Generates a new random salt if not provided."""
+    if salt is None:
+        salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        260000,
+    )
+    hash_b64 = base64.b64encode(key).decode("utf-8")
+    return f"{salt}${hash_b64}"
+
+
+def verify_password(plain: str, stored: str) -> bool:
+    """Verify a plain password against a stored 'salt$hash' string."""
+    if "$" not in stored:
+        # Legacy format (static salt) — migrate on next login
+        return _legacy_verify(plain, stored)
+    salt, _ = stored.split("$", 1)
+    return hash_password(plain, salt) == stored
+
+
+def _legacy_verify(plain: str, stored: str) -> bool:
+    """Fallback for old static-salt hashed passwords."""
+    old_salt = "ufis_salt"
+    key = hashlib.pbkdf2_hmac("sha256", plain.encode(), old_salt.encode(), 100000)
+    return base64.b64encode(key).decode() == stored
+
+
+# ---------------------------------------------------------------------------
+# JWT helpers — uses PyJWT when available, falls back to manual HS256
+# ---------------------------------------------------------------------------
+
+def create_jwt_token(data: dict, expires_in_seconds: int = TOKEN_EXPIRE_SECONDS) -> str:
+    if _PYJWT_AVAILABLE:
+        import time
+        payload = data.copy()
+        payload["exp"] = int(time.time()) + expires_in_seconds
+        return pyjwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    else:
+        # Manual fallback (correct hmac usage)
+        import time, json, hmac as _hmac
+        header = {"alg": "HS256", "typ": "JWT"}
+        payload = data.copy()
+        payload["exp"] = int(time.time()) + expires_in_seconds
+
+        h_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
+        p_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+        sig_input = f"{h_b64}.{p_b64}"
+        # ✅ Correct: hmac.new() signature
+        mac = _hmac.new(SECRET_KEY.encode(), sig_input.encode(), hashlib.sha256)
+        sig_b64 = base64.urlsafe_b64encode(mac.digest()).decode().rstrip("=")
+        return f"{h_b64}.{p_b64}.{sig_b64}"
+
+
+# ---------------------------------------------------------------------------
+# Pydantic request / response models
+# ---------------------------------------------------------------------------
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+
 
 class RegisterRequest(BaseModel):
     email: str
@@ -52,34 +108,48 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
     user: dict
 
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+
 @router.post("/login", response_model=AuthResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
-    
-    # Allow default demo login fast path
-    if req.email == "operator@bbmp.gov.in" and req.password == "admin123":
+
+    # Allow default demo login fast-path (credentials from env when available)
+    demo_email = os.environ.get("DEMO_EMAIL", "operator@bbmp.gov.in")
+    demo_pass  = os.environ.get("DEMO_PASSWORD", "admin123")
+
+    if req.email == demo_email and req.password == demo_pass:
         if not user:
             user = User(
-                email="operator@bbmp.gov.in",
-                hashed_password=hash_password("admin123"),
+                email=demo_email,
+                hashed_password=hash_password(demo_pass),
                 full_name="Control Room Operator",
                 role="operator",
-                tenant_id=settings.DEFAULT_TENANT_ID
+                tenant_id=settings.DEFAULT_TENANT_ID,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
-    elif not user or user.hashed_password != hash_password(req.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+        # If user exists but used legacy static salt, migrate password hash
+        elif "$" not in user.hashed_password:
+            user.hashed_password = hash_password(demo_pass)
+            db.commit()
+    else:
+        if not user or not verify_password(req.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     token = create_jwt_token({
         "sub": user.user_id,
         "email": user.email,
         "role": user.role,
-        "full_name": user.full_name
+        "full_name": user.full_name,
     })
 
     return AuthResponse(
@@ -90,9 +160,10 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "full_name": user.full_name,
             "role": user.role,
-            "tenant_id": user.tenant_id
-        }
+            "tenant_id": user.tenant_id,
+        },
     )
+
 
 @router.post("/register", response_model=AuthResponse)
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
@@ -100,15 +171,15 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            detail="User with this email already exists",
         )
-    
+
     new_user = User(
         email=req.email,
-        hashed_password=hash_password(req.password),
+        hashed_password=hash_password(req.password),  # random salt auto-generated
         full_name=req.full_name,
         role=req.role or "operator",
-        tenant_id=settings.DEFAULT_TENANT_ID
+        tenant_id=settings.DEFAULT_TENANT_ID,
     )
     db.add(new_user)
     db.commit()
@@ -118,7 +189,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         "sub": new_user.user_id,
         "email": new_user.email,
         "role": new_user.role,
-        "full_name": new_user.full_name
+        "full_name": new_user.full_name,
     })
 
     return AuthResponse(
@@ -129,6 +200,6 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
             "email": new_user.email,
             "full_name": new_user.full_name,
             "role": new_user.role,
-            "tenant_id": new_user.tenant_id
-        }
+            "tenant_id": new_user.tenant_id,
+        },
     )

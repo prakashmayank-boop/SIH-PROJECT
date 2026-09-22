@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from backend.app.database import get_db
@@ -7,15 +7,43 @@ from backend.app.schemas.pydantic_models import ScenarioSwitchRequest, FloodRepo
 from backend.app.services.hydraulic_engine import set_active_scenario, SCENARIOS, active_scenario_id
 from backend.app.config import settings
 
+from backend.app.services.cache import hydraulic_cache
+
 router = APIRouter(prefix="/api/v1", tags=["Sensors & Scenarios"])
 
 @router.get("/sensors")
 def get_sensors(db: Session = Depends(get_db)):
     sensors = db.query(Sensor).all()
+    if not sensors:
+        return {
+            "summary": {"total": 0, "online": 0, "offline": 0, "warning": 0},
+            "sensors": []
+        }
+
+    # Batch fetch all related sites in a single query
+    site_ids = {s.site_id for s in sensors if s.site_id}
+    sites_map = {}
+    if site_ids:
+        sites = db.query(MonitoringSite).filter(MonitoringSite.site_id.in_(site_ids)).all()
+        sites_map = {site.site_id: site for site in sites}
+
+    # Batch fetch latest readings in a single query
+    sensor_ids = [s.sensor_id for s in sensors]
+    readings = (
+        db.query(SensorReading)
+        .filter(SensorReading.sensor_id.in_(sensor_ids))
+        .order_by(SensorReading.observed_at.desc())
+        .all()
+    )
+    latest_readings = {}
+    for r in readings:
+        if r.sensor_id not in latest_readings:
+            latest_readings[r.sensor_id] = r
+
     results = []
     for s in sensors:
-        site = db.query(MonitoringSite).filter_by(site_id=s.site_id).first()
-        reading = db.query(SensorReading).filter_by(sensor_id=s.sensor_id).order_by(SensorReading.observed_at.desc()).first()
+        site = sites_map.get(s.site_id)
+        reading = latest_readings.get(s.sensor_id)
         results.append({
             "sensor_id": s.sensor_id,
             "device_id": s.external_device_id,
@@ -42,6 +70,7 @@ def get_sensors(db: Session = Depends(get_db)):
 @router.post("/simulation/scenario")
 def switch_simulation_scenario(req: ScenarioSwitchRequest):
     set_active_scenario(req.scenario_id, req.custom_rainfall_mmph)
+    hydraulic_cache.clear()
     if req.scenario_id == "custom":
         sc_name = f"Custom Simulation ({req.custom_rainfall_mmph or 65.0} mm/h)"
         base_int = req.custom_rainfall_mmph or 65.0
