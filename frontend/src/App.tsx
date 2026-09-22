@@ -15,6 +15,7 @@ import { SmsBroadcastModal } from './components/SmsBroadcastModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { TabViews } from './components/Views';
 import { apiService } from './services/api';
+import './components/admin-portal.css';
 import type {
   HorizonStep,
   RoadFeature,
@@ -31,11 +32,8 @@ import { AlertCircle, RotateCcw } from 'lucide-react';
 const UFISDashboard: React.FC = () => {
   const { addToast } = useToast();
 
-  // Authentication State
-  const [user, setUser] = useState<any>(() => {
-    const saved = localStorage.getItem('ufis_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Authentication State - Always opens Login Page first when opening Admin Portal
+  const [user, setUser] = useState<any>(null);
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -179,14 +177,12 @@ const UFISDashboard: React.FC = () => {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
-      await apiService.completeTask(taskId, 'no visible issue', 'Inspection verified normal hydraulic throughput.');
-      setTasks(prev =>
-        prev.map(t => (t.task_id === taskId ? { ...t, status: 'COMPLETED' } : t))
-      );
+      await apiService.completeTask(taskId, 'Issue resolved', 'Inspection verified normal hydraulic throughput.');
+      setTasks(prev => prev.filter(t => t.task_id !== taskId));
       addToast({
         type: 'success',
         title: 'Task Completed',
-        message: 'Field crew report filed and inspection closed.'
+        message: 'Field crew task completed and removed from active operations queue.'
       });
     } catch (err) {
       console.error(err);
@@ -194,6 +190,25 @@ const UFISDashboard: React.FC = () => {
         type: 'error',
         title: 'Task Update Failed',
         message: 'Could not complete task on server.'
+      });
+    }
+  };
+
+  const handleCompleteReport = async (reportId: string) => {
+    try {
+      await apiService.completeFloodReport(reportId);
+      setFloodReports(prev => prev.filter(r => r.report_id !== reportId));
+      addToast({
+        type: 'success',
+        title: 'Report Completed',
+        message: 'Citizen incident resolved and removed from live observations.'
+      });
+    } catch (err) {
+      console.error(err);
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Could not mark report as completed.'
       });
     }
   };
@@ -222,7 +237,7 @@ const UFISDashboard: React.FC = () => {
   const isGisWorkbench = activeTab === 'map';
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#081425] text-[#d8e3fb]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[var(--ar-bg)] text-[var(--ar-text)] ar-root">
       {/* 1. Left Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
@@ -231,6 +246,7 @@ const UFISDashboard: React.FC = () => {
         openReportModal={() => setIsReportModalOpen(true)}
         openWhatIfSimulator={() => setIsWhatIfModalOpen(true)}
         unreadAlertCount={unreadAlertsCount}
+        citizenReportsCount={floodReports.length}
       />
 
       {/* 2. Main Dashboard & Map Area */}
@@ -256,10 +272,10 @@ const UFISDashboard: React.FC = () => {
 
         {/* Global Error State with Retry Button */}
         {error && (
-          <div className="p-3 bg-[#ef4444]/20 border-b border-[#ef4444]/40 flex items-center justify-between px-6 text-xs text-white">
+          <div className="p-3 bg-[#ef4444]/10 border-b border-[#ef4444]/30 flex items-center justify-between px-6 text-xs text-[#dc2626]">
             <div className="flex items-center gap-2">
-              <AlertCircle size={16} className="text-[#ef4444]" />
-              <span>{error}</span>
+              <AlertCircle size={16} className="text-[#dc2626]" />
+              <span className="font-semibold">{error}</span>
             </div>
             <button
               onClick={() => loadData(currentHorizon)}
@@ -317,11 +333,11 @@ const UFISDashboard: React.FC = () => {
                     className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
                     style={{
                       zIndex: 1001,
-                      background: 'rgba(13,24,41,0.92)',
-                      border: '1px solid rgba(16,185,129,0.4)',
-                      color: '#10b981',
+                      background: 'rgba(255, 255, 255, 0.96)',
+                      border: '1px solid var(--ar-border-2)',
+                      color: 'var(--ar-green)',
                       backdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 24px rgba(0,0,0,0.5)'
+                      boxShadow: '0 4px 16px rgba(15,23,42,0.1)'
                     }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -334,25 +350,25 @@ const UFISDashboard: React.FC = () => {
 
               {/* Compact Mode: Hydrodynamic Summary table below the map */}
               {mapSize === 'compact' && summary && (
-                <div className="flex-1 overflow-y-auto bg-[#081425] border-t border-[rgba(255,255,255,0.08)] p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#86948a] mb-3 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse inline-block" />
+                <div className="flex-1 overflow-y-auto bg-[var(--ar-surface)] border-t border-[var(--ar-border)] p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ar-text-muted)] mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--ar-green)] animate-pulse inline-block" />
                     Hydrodynamic Spatial Summary — {summary.horizon}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {[
-                      { label: 'Flood Risk Index', value: `${summary.flood_risk_index}/100`, color: summary.flood_risk_index > 70 ? '#ef4444' : summary.flood_risk_index > 40 ? '#f59e0b' : '#10b981' },
-                      { label: 'Peak Depth', value: `${summary.max_predicted_depth_cm} cm`, color: '#38bdf8' },
-                      { label: 'Critical Roads', value: `${summary.critical_road_count}`, color: '#f59e0b' },
-                      { label: 'Surcharged Nodes', value: `${summary.surcharged_node_count}`, color: '#a78bfa' },
-                      { label: 'Rainfall', value: `${summary.rainfall_mmph} mm/h`, color: '#38bdf8' },
-                      { label: 'Highest Risk Area', value: summary.highest_risk_area, color: '#ef4444' },
-                      { label: 'Peak Flood Time', value: summary.peak_flood_time, color: '#f59e0b' },
-                      { label: 'Confidence', value: `${Math.round(summary.confidence_score * 100)}%`, color: '#10b981' },
+                      { label: 'Flood Risk Index', value: `${summary.flood_risk_index}/100`, color: summary.flood_risk_index > 70 ? '#dc2626' : summary.flood_risk_index > 40 ? '#d97706' : '#059669' },
+                      { label: 'Peak Depth', value: `${summary.max_predicted_depth_cm} cm`, color: '#0284c7' },
+                      { label: 'Critical Roads', value: `${summary.critical_road_count}`, color: '#d97706' },
+                      { label: 'Surcharged Nodes', value: `${summary.surcharged_node_count}`, color: '#7c3aed' },
+                      { label: 'Rainfall', value: `${summary.rainfall_mmph} mm/h`, color: '#0284c7' },
+                      { label: 'Highest Risk Area', value: summary.highest_risk_area, color: '#dc2626' },
+                      { label: 'Peak Flood Time', value: summary.peak_flood_time, color: '#d97706' },
+                      { label: 'Confidence', value: `${Math.round(summary.confidence_score * 100)}%`, color: '#059669' },
                     ].map(item => (
-                      <div key={item.label} className="glass-panel p-3">
-                        <div className="text-[10px] text-[#86948a] uppercase tracking-wider mb-1">{item.label}</div>
-                        <div className="text-sm font-bold" style={{ color: item.color }}>{item.value}</div>
+                      <div key={item.label} className="ar-card p-3">
+                        <div className="text-[10px] text-[var(--ar-text-muted)] uppercase tracking-wider mb-1 font-bold">{item.label}</div>
+                        <div className="text-sm font-bold font-mono" style={{ color: item.color }}>{item.value}</div>
                       </div>
                     ))}
                   </div>
@@ -360,19 +376,19 @@ const UFISDashboard: React.FC = () => {
                   {/* Flood incident reports summary */}
                   {floodReports.length > 0 && (
                     <div className="mt-4">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#f59e0b] mb-2 flex items-center gap-2">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#d97706] mb-2 flex items-center gap-2">
                         <AlertCircle size={12} /> Live Citizen Reports ({floodReports.length})
                       </div>
                       <div className="space-y-1.5">
                         {floodReports.slice(0, 5).map(r => (
-                          <div key={r.report_id} className="glass-panel px-3 py-2 flex items-center justify-between gap-4 text-[11px]">
-                            <span className="text-white truncate">{r.description}</span>
+                          <div key={r.report_id} className="ar-card px-3 py-2 flex items-center justify-between gap-4 text-[11px]">
+                            <span className="text-[var(--ar-text)] font-medium truncate">{r.description}</span>
                             <span className={`font-bold shrink-0 ${
-                              r.severity === 'CRITICAL' ? 'text-[#ef4444]'
-                              : r.severity === 'HIGH' ? 'text-[#f59e0b]'
-                              : 'text-[#10b981]'
+                              r.severity === 'CRITICAL' ? 'text-[#dc2626]'
+                              : r.severity === 'HIGH' ? 'text-[#d97706]'
+                              : 'text-[#059669]'
                             }`}>{r.severity}</span>
-                            <span className="text-[#64748b] font-mono shrink-0">{r.depth_cm}cm</span>
+                            <span className="text-[var(--ar-text-muted)] font-mono shrink-0">{r.depth_cm}cm</span>
                           </div>
                         ))}
                       </div>
@@ -392,6 +408,28 @@ const UFISDashboard: React.FC = () => {
               onSelectNode={handleSelectNode}
               alerts={alerts}
               onAcknowledgeAlert={handleAcknowledgeAlert}
+              floodReports={floodReports}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
+              onDispatchTaskFromReport={(report) => {
+                setTaskTargetNode({
+                  node_id: `citizen-${report.report_id}`,
+                  node_code: `CITIZEN-${report.report_id.slice(0, 6)}`,
+                  node_type: 'road_drain',
+                  coordinates: [report.coordinates[0], report.coordinates[1]],
+                  ground_elev_m: 892.0,
+                  predicted_inflow_m3s: 1.2,
+                  inlet_capacity_m3s: 2.0,
+                  predicted_overflow_m3s: 0.4,
+                  stress_ratio: 1.25,
+                  status: report.severity === 'CRITICAL' ? 'CRITICAL' : 'OVERLOADED',
+                  confidence: 0.95
+                });
+                setIsTaskModalOpen(true);
+              }}
+              onSelectReportOnMap={() => {
+                setActiveTab('map');
+              }}
+              onCompleteReport={handleCompleteReport}
             />
           )}
 
@@ -505,11 +543,71 @@ const UFISDashboard: React.FC = () => {
   );
 };
 
-export const App: React.FC = () => (
-  <ToastProvider>
-    <UFISDashboard />
-  </ToastProvider>
-);
+import { CitizenApp } from './citizen/CitizenApp';
+import { LandingPage } from './components/LandingPage';
+
+export const App: React.FC = () => {
+  const getInitialMode = (): 'landing' | 'citizen' | 'control_room' => {
+    if (typeof window !== 'undefined') {
+      const h = window.location.hash.toLowerCase();
+      const s = window.location.search.toLowerCase();
+      if (h === '#control-room' || h === '#admin' || s.includes('mode=control-room') || s.includes('mode=admin')) {
+        return 'control_room';
+      }
+      if (h === '#citizen' || s.includes('mode=citizen')) {
+        return 'citizen';
+      }
+    }
+    return 'landing';
+  };
+
+  const [viewMode, setViewMode] = useState<'landing' | 'citizen' | 'control_room'>(getInitialMode);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setViewMode(getInitialMode());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'landing') {
+      document.body.classList.add('landing-page-body');
+      document.body.classList.remove('citizen-portal-body');
+    } else if (viewMode === 'citizen') {
+      document.body.classList.add('citizen-portal-body');
+      document.body.classList.remove('landing-page-body');
+    } else {
+      document.body.classList.remove('landing-page-body', 'citizen-portal-body');
+    }
+  }, [viewMode]);
+
+  const handleSelectPortal = (portal: 'citizen' | 'admin') => {
+    if (portal === 'citizen') {
+      window.location.hash = '#citizen';
+      setViewMode('citizen');
+    } else {
+      window.location.hash = '#control-room';
+      setViewMode('control_room');
+    }
+  };
+
+  if (viewMode === 'landing') {
+    return <LandingPage onSelectPortal={handleSelectPortal} />;
+  }
+
+  if (viewMode === 'citizen') {
+    return <CitizenApp />;
+  }
+
+  return (
+    <ToastProvider>
+      <UFISDashboard />
+    </ToastProvider>
+  );
+};
 
 export const AppWithProviders = App;
 export default App;
+

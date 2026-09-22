@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Mail, KeyRound, AlertCircle } from 'lucide-react';
+import { ShieldAlert, Mail, KeyRound, AlertCircle, X, ArrowRight } from 'lucide-react';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -40,104 +41,100 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-[#0f172a] border border-[#1e293b] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box" style={{ maxWidth: 440 }}>
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-[#1e293b] to-[#0f172a] border-b border-[#334155] flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#10b981]/20 border border-[#10b981]/40 flex items-center justify-center text-[#10b981]">
-            <ShieldAlert size={22} />
+        <div className="ar-modal-header">
+          <div className="ar-modal-title">
+            <ShieldAlert size={18} className="text-[#10b981]" />
+            <span>Control Room Authentication</span>
           </div>
-          <div>
-            <h2 className="text-base font-bold text-white tracking-wide">UFIS Authentication</h2>
-            <p className="text-xs text-[#94a3b8]">Urban Flood Nowcasting Portal Access</p>
-          </div>
+          <button onClick={onClose} className="ar-modal-close">
+            <X size={16} />
+          </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="ar-modal-body">
           {error && (
-            <div className="p-3 bg-[#ef4444]/15 border border-[#ef4444]/30 rounded text-[#ef4444] flex items-start gap-2">
+            <div className="p-3 bg-[#ef4444]/15 border border-[#ef4444]/30 rounded-lg text-[#ef4444] text-xs flex items-start gap-2">
               <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-[#94a3b8] font-semibold block text-xs">Official Email</label>
+          <div className="ar-field">
+            <label className="ar-field-label">Official Email</label>
             <div className="relative flex items-center">
-              <div className="absolute left-3.5 flex items-center pointer-events-none text-[#64748b]">
-                <Mail size={16} />
+              <div className="absolute left-3 flex items-center pointer-events-none text-[#64748b]">
+                <Mail size={15} />
               </div>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.6rem', paddingRight: '1rem', height: '42px' }}
-                className="w-full bg-[#111c2d] border border-[#334155] rounded-xl text-white text-xs placeholder-[#64748b] focus:outline-none focus:border-[#10b981] transition-all"
+                style={{ paddingLeft: '2.5rem', height: '42px', width: '100%' }}
+                className="ar-field-input"
                 placeholder="operator@bbmp.gov.in"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[#94a3b8] font-semibold block text-xs">Operator Password</label>
+          <div className="ar-field">
+            <label className="ar-field-label">Operator Password</label>
             <div className="relative flex items-center">
-              <div className="absolute left-3.5 flex items-center pointer-events-none text-[#64748b]">
-                <KeyRound size={16} />
+              <div className="absolute left-3 flex items-center pointer-events-none text-[#64748b]">
+                <KeyRound size={15} />
               </div>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.6rem', paddingRight: '1rem', height: '42px' }}
-                className="w-full bg-[#111c2d] border border-[#334155] rounded-xl text-white text-xs placeholder-[#64748b] focus:outline-none focus:border-[#10b981] transition-all"
+                style={{ paddingLeft: '2.5rem', height: '42px', width: '100%' }}
+                className="ar-field-input"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#081425] border border-[#10b981]/30 text-[#94a3b8] text-[11px] space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-[#10b981] text-[10px] uppercase tracking-wider">Demo Credentials</span>
+          {/* Quick Demo Credentials Box */}
+          <div className="p-3 rounded-lg bg-[rgba(8,15,30,0.8)] border border-[#10b981]/30 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-bold text-[#10b981] uppercase tracking-wider">
+              <span>Demo Credentials</span>
               <button
                 type="button"
                 onClick={() => {
                   setEmail('operator@bbmp.gov.in');
                   setPassword('admin123');
                 }}
-                className="text-[10px] text-[#38bdf8] hover:underline"
+                className="text-[#38bdf8] hover:underline bg-transparent border-none cursor-pointer"
               >
                 Auto-fill
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-[#111c2d] p-1.5 rounded border border-white/5 truncate font-mono text-[10px] text-white">
-                operator@bbmp.gov.in
+            <div className="grid grid-cols-2 gap-2 text-[11px] ar-mono">
+              <div className="bg-white/5 p-1.5 rounded">
+                <span className="text-[#64748b] block text-[9px]">Email</span>
+                <span className="text-white truncate block">operator@bbmp.gov.in</span>
               </div>
-              <div className="bg-[#111c2d] p-1.5 rounded border border-white/5 font-mono text-[10px] text-white">
-                admin123
+              <div className="bg-white/5 p-1.5 rounded">
+                <span className="text-[#64748b] block text-[9px]">Pass</span>
+                <span className="text-white">admin123</span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded text-[#94a3b8] hover:bg-[#1e293b] transition-all font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary px-5 py-2 text-xs font-semibold"
-            >
-              {loading ? 'Authenticating...' : 'Sign In'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="ar-btn-primary py-3"
+            style={{ width: '100%', marginTop: 4 }}
+          >
+            {loading ? 'Authenticating...' : 'Sign In to Control Center'}
+            <ArrowRight size={14} />
+          </button>
         </form>
       </div>
     </div>

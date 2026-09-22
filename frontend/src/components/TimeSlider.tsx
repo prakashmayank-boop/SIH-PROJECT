@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play, Pause, Clock } from 'lucide-react';
 import type { HorizonStep } from '../types';
+import './admin-portal.css';
 
 interface TimeSliderProps {
   currentHorizon: HorizonStep;
@@ -15,73 +16,72 @@ export const TimeSlider: React.FC<TimeSliderProps> = ({
   isPlaying,
   onTogglePlay
 }) => {
-  const steps: { id: HorizonStep; label: string; desc: string }[] = [
-    { id: 'NOW', label: 'NOW', desc: 'Current Observed' },
-    { id: '+30m', label: '+30m', desc: 'Nowcast +30m' },
-    { id: '+1h', label: '+1h', desc: 'Peak Inflow +1h' },
-    { id: '+2h', label: '+2h', desc: 'Surface Flow +2h' },
-    { id: '+3h', label: '+3h', desc: 'Recession +3h' }
+  const steps: { id: HorizonStep; label: string; sub: string }[] = [
+    { id: 'NOW', label: 'NOW', sub: 'Observed' },
+    { id: '+30m', label: '+30m', sub: 'Inflow' },
+    { id: '+1h', label: '+1h', sub: 'Peak' },
+    { id: '+2h', label: '+2h', sub: 'Surcharge' },
+    { id: '+3h', label: '+3h', sub: 'Recession' }
   ];
 
+  const currentStepInfo = steps.find(s => s.id === currentHorizon) || steps[0];
+
   return (
-    <div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1001] glass-panel shadow-2xl border border-[rgba(255,255,255,0.15)] select-none"
-      style={{ maxWidth: 'calc(100% - 32px)', width: 'auto' }}
-    >
-      {/* Main row: play + label + step buttons */}
-      <div className="flex items-center gap-3 px-4 py-2 flex-wrap justify-center">
-        {/* Play/Pause Scrubber */}
-        <button
-          onClick={onTogglePlay}
-          className="w-8 h-8 rounded-full bg-[#10b981] hover:bg-[#0ea371] text-[#003824] flex items-center justify-center transition-all shadow-md shrink-0"
-          title={isPlaying ? 'Pause Timeline' : 'Animate 0-3h Flood Progression'}
-        >
-          {isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
-        </button>
+    <div className="ar-timeline-hud">
+      {/* Play/Pause Scrubber */}
+      <button
+        onClick={onTogglePlay}
+        className="ar-timeline-play"
+        title={isPlaying ? 'Pause Timeline' : 'Animate 0-3h Flood Progression'}
+      >
+        {isPlaying ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: 2 }} />}
+      </button>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <Clock size={14} className="text-[#86948a]" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#86948a]">Nowcast Horizon:</span>
+      {/* Horizon Label & Status */}
+      <div className="ar-timeline-badge">
+        <span className="ar-timeline-badge__title">
+          <Clock size={11} />
+          Nowcast 0–3h
+        </span>
+        <span className="ar-timeline-badge__sub">
+          {currentStepInfo.label} &bull; {currentStepInfo.sub}
+        </span>
+      </div>
+
+      {/* Step Buttons */}
+      <div className="ar-timeline-steps">
+        {steps.map(s => {
+          const active = currentHorizon === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => onChangeHorizon(s.id)}
+              className={`ar-timeline-step-btn ${active ? 'ar-timeline-step-btn--active' : ''}`}
+              title={`${s.label}: ${s.sub}`}
+            >
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Water Depth Classification Legend */}
+      <div className="ar-depth-legend hidden md:flex">
+        <div className="ar-depth-legend__item" title="Low risk depth">
+          <span className="ar-depth-dot" style={{ background: '#10B981' }} />
+          <span>&lt;5cm</span>
         </div>
-
-        {/* Step Buttons */}
-        <div className="flex items-center bg-[#081425] p-1 rounded border border-[rgba(255,255,255,0.08)] gap-1 shrink-0">
-          {steps.map(s => {
-            const active = currentHorizon === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => onChangeHorizon(s.id)}
-                className={`px-3 py-1 rounded text-xs font-bold transition-all ${
-                  active
-                    ? 'bg-[#10b981] text-[#003824] shadow-sm scale-105'
-                    : 'text-[#86948a] hover:text-white hover:bg-[#152031]'
-                }`}
-              >
-                {s.label}
-              </button>
-            );
-          })}
+        <div className="ar-depth-legend__item" title="Moderate risk depth">
+          <span className="ar-depth-dot" style={{ background: '#F59E0B' }} />
+          <span>5-15cm</span>
         </div>
-
-        {/* Legend — inline on wide screens */}
-        <div className="hidden lg:flex items-center gap-2 text-[10px] pl-2 border-l border-[rgba(255,255,255,0.1)] shrink-0">
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
-            <span className="text-[#86948a]">0-5cm</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
-            <span className="text-[#86948a]">5-15cm</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
-            <span className="text-[#86948a]">15-30cm</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#7f1d1d]" />
-            <span className="text-[#86948a]">&gt;30cm</span>
-          </div>
+        <div className="ar-depth-legend__item" title="High risk depth">
+          <span className="ar-depth-dot" style={{ background: '#EF4444' }} />
+          <span>15-30cm</span>
+        </div>
+        <div className="ar-depth-legend__item" title="Critical hazard depth">
+          <span className="ar-depth-dot" style={{ background: '#7F1D1D', boxShadow: '0 0 6px #EF4444' }} />
+          <span>&gt;30cm</span>
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ export interface DrainageNode {
   node_id: string;
   node_code: string;
   node_type: string;
+  node_name?: string;
   coordinates: [number, number]; // [lon, lat]
   ground_elev_m: number;
   predicted_inflow_m3s: number;
@@ -39,15 +40,27 @@ export interface DrainageNode {
   predicted_overflow_m3s: number;
   status: 'NORMAL' | 'AT RISK' | 'OVERLOADED' | 'CRITICAL';
   confidence: number;
+  is_outfall?: boolean;
+  discharge_target?: string;
 }
 
 export interface DrainageEdge {
   edge_id: string;
   edge_code: string;
+  /** Upstream node code (from hydraulic_engine topology) */
+  from_node_code?: string;
+  /** Downstream node code */
+  to_node_code?: string;
+  /** True when this conduit terminates at an outfall */
+  is_outfall_edge?: boolean;
+  from_elev_m?: number;
+  to_elev_m?: number;
   coordinates: [number, number][];
   diameter_m: number;
   slope: number;
   blockage_percent: number;
+  design_capacity_m3s?: number;
+  effective_capacity_m3s?: number;
   flow_m3s: number;
   flow_direction?: 'FORWARD' | 'BACKFLOW';
   velocity_ms?: number;

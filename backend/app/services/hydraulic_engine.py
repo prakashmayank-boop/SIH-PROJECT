@@ -64,6 +64,9 @@ def calculate_hydraulic_state(nodes: List[DrainageNode], edges: List[DrainageEdg
     rain_data = get_current_rainfall(horizon_step)
     intensity = rain_data["intensity_mmph"] # mm/h
 
+    # Map node lookup
+    node_id_map = {n.node_id: n for n in nodes}
+
     # Map node inflows and stress
     node_results = {}
     for node in nodes:
@@ -86,10 +89,16 @@ def calculate_hydraulic_state(nodes: List[DrainageNode], edges: List[DrainageEdg
         else:
             status = "CRITICAL"
 
+        meta = node.metadata_json or {}
+        is_outfall = node.node_type == "outfall" or meta.get("is_terminal_outfall", False) or node.node_code in ["OF-01", "OF-02"]
+
         node_results[node.node_code] = {
             "node_id": node.node_id,
             "node_code": node.node_code,
             "node_type": node.node_type,
+            "node_name": meta.get("name", f"Drainage Node {node.node_code}"),
+            "is_outfall": is_outfall,
+            "discharge_target": meta.get("discharge_target", "Agara Lake Basin Outfall" if is_outfall else None),
             "coordinates": node.geom["coordinates"],
             "ground_elev_m": node.ground_elev_m,
             "predicted_inflow_m3s": inflow,
@@ -103,6 +112,12 @@ def calculate_hydraulic_state(nodes: List[DrainageNode], edges: List[DrainageEdg
     # Pipe conduits calculation
     edge_results = []
     for edge in edges:
+        from_n = node_id_map.get(edge.from_node_id)
+        to_n = node_id_map.get(edge.to_node_id)
+        from_code = from_n.node_code if from_n else "MH-UNKNOWN"
+        to_code = to_n.node_code if to_n else "MH-UNKNOWN"
+        is_outfall_edge = (to_n and to_n.node_type == "outfall") or (to_code in ["OF-01", "OF-02"])
+
         cap = edge.design_capacity_m3s * edge.effective_capacity_factor
         # Conduit flow based on catchment runoff demanding throughput
         # Divisor 85.0 ensures moderate flow (< capacity) at standard monsoon; surcharge only during cloudburst
@@ -131,6 +146,11 @@ def calculate_hydraulic_state(nodes: List[DrainageNode], edges: List[DrainageEdg
         edge_results.append({
             "edge_id": edge.edge_id,
             "edge_code": edge.edge_code,
+            "from_node_code": from_code,
+            "to_node_code": to_code,
+            "is_outfall_edge": is_outfall_edge,
+            "from_elev_m": from_n.ground_elev_m if from_n else 900.0,
+            "to_elev_m": to_n.ground_elev_m if to_n else 890.0,
             "coordinates": edge.geom["coordinates"],
             "diameter_m": edge.diameter_m,
             "slope": edge.slope,

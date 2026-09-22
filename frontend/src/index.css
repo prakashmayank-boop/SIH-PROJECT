@@ -28,13 +28,24 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-space);
-  color: var(--text-main);
+  background-color: #F8FAFC;
+  color: #0F172A;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
   user-select: none;
+}
+
+/* ── Citizen Portal & Landing Page body override ── */
+/* Restores normal scroll for content pages */
+body.citizen-portal-body,
+body.landing-page-body {
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+  background-color: #f6f9fc;
+  user-select: auto;
 }
 
 /* Tabular Mono for Numbers */
@@ -45,25 +56,24 @@ body {
 
 /* Glass Card */
 .glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .glass-panel-glow {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+  background: #FFFFFF;
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.12);
+  border-radius: 6px;
 }
 
 .glass-panel-critical {
-  background: rgba(40, 15, 20, 0.88);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+  border-radius: 6px;
 }
 
 /* Custom Scrollbar */
@@ -72,14 +82,14 @@ body {
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #081425;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #94A3B8;
 }
 
 /* Pulsing Radar Animations */
@@ -118,21 +128,21 @@ body {
 
 /* Loading Skeleton */
 .skeleton {
-  background: linear-gradient(90deg, #152031 25%, #1f2a3c 50%, #152031 75%);
+  background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
 }
 
-/* Map Dark Theme Override */
+/* Map Light Theme — natural OSM tiles */
 .leaflet-container {
-  background: #081425 !important;
+  background: #F8FAFC !important;
   font-family: 'Inter', sans-serif !important;
 }
 
-/* Invert OSM tiles to dark palette — free, no API key, no watermark */
+/* No dark invert filter — use natural OSM light basemap */
 .leaflet-tile-pane {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  filter: none;
 }
 
 /* Ping animation for flood report markers */
@@ -142,23 +152,24 @@ body {
 }
 
 .leaflet-control-zoom a {
-  background-color: #152031 !important;
-  color: #d8e3fb !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08) !important;
 }
 .leaflet-control-zoom a:hover {
-  background-color: #1e293b !important;
-  color: #10b981 !important;
+  background-color: #F1F5F9 !important;
+  color: #059669 !important;
 }
 .leaflet-popup-content-wrapper {
-  background: #111c2d !important;
-  color: #d8e3fb !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 6px !important;
-  backdrop-filter: blur(8px) !important;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1) !important;
 }
 .leaflet-popup-tip {
-  background: #111c2d !important;
+  background: #FFFFFF !important;
 }
 
 /* Clean Button Base */
@@ -235,22 +246,22 @@ body {
 /* Duration utilities */
 .duration-200 { animation-duration: 200ms; }
 
-/* Premium card hover glow */
+/* Premium card hover */
 .glass-panel:hover {
-  border-color: rgba(255,255,255,0.14);
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.07);
 }
 
 /* Road segment tooltip styling */
 .map-tooltip {
-  background: #111c2d !important;
-  color: #d8e3fb !important;
-  border: 1px solid rgba(255,255,255,0.15) !important;
-  border-radius: 6px !important;
-  backdrop-filter: blur(8px) !important;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 8px !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
   padding: 6px 10px !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1) !important;
 }
 .leaflet-tooltip-top::before,
 .leaflet-tooltip-bottom::before,
@@ -266,16 +277,16 @@ body {
   left: 100%;
   margin-left: 8px;
   white-space: nowrap;
-  background: #1e293b;
-  color: #d8e3fb;
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #334155;
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 12px;
   font-family: 'Inter', sans-serif;
   pointer-events: none;
   z-index: 9999;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.2);
 }
 
 /* Smooth transitions everywhere */

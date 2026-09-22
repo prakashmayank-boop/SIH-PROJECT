@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface ReportFloodModalProps {
   isOpen: boolean;
@@ -64,97 +65,96 @@ export const ReportFloodModal: React.FC<ReportFloodModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111c2d] border border-[rgba(255,255,255,0.15)] rounded-lg w-full max-w-md shadow-2xl p-5 text-xs">
-        <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-4">
-          <div className="flex items-center gap-2 text-white font-bold">
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box" style={{ maxWidth: 480 }}>
+        <div className="ar-modal-header">
+          <div className="ar-modal-title">
             <AlertCircle size={16} className="text-[#f59e0b]" />
-            <span>Citizen / Field Flood Report</span>
+            <span>Control Room Incident Ingestion</span>
           </div>
-          <button onClick={onClose} className="text-[#86948a] hover:text-white">
+          <button onClick={onClose} className="ar-modal-close">
             <X size={16} />
           </button>
         </div>
 
         {success ? (
-          <div className="py-8 text-center space-y-2">
-            <CheckCircle size={36} className="text-[#10b981] mx-auto animate-bounce" />
-            <h4 className="text-white font-bold text-sm">Report Logged Successfully</h4>
-            <p className="text-[11px] text-[#86948a]">Ground truth report forwarded to BBMP Control Room for sensor cross-validation.</p>
+          <div className="p-8 text-center space-y-2">
+            <CheckCircle size={36} className="text-[#059669] mx-auto animate-bounce" />
+            <h4 className="text-[#0F172A] font-bold text-sm">Incident Ingested into Nowcast Model</h4>
+            <p className="text-[11px] text-[#64748B]">Ground observation verified and forwarded to GIS prediction engine.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="ar-modal-body">
             {/* Landmark Preset Selector */}
-            <div>
-              <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1 flex items-center gap-1">
-                <MapPin size={10} className="text-[#f59e0b]" /> Flood Location
+            <div className="ar-field">
+              <label className="ar-field-label flex items-center gap-1">
+                <MapPin size={11} className="text-[#f59e0b]" /> Inundation Location / Landmark
               </label>
               <select
                 value={landmarkIdx}
                 onChange={e => setLandmarkIdx(Number(e.target.value))}
-                className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none focus:border-[#f59e0b] cursor-pointer"
+                className="ar-field-select cursor-pointer"
               >
                 {FLOOD_LANDMARKS.map((lm, i) => (
                   <option key={i} value={i}>{lm.label}</option>
                 ))}
               </select>
-              {/* Show selected coordinates */}
-              <div className="mt-1 flex items-center gap-2 text-[10px] text-[#64748b] font-mono">
-                <span>📍 {selectedLandmark.lat.toFixed(4)}° N, {selectedLandmark.lon.toFixed(4)}° E</span>
+              <div className="text-[10px] text-[#64748b] ar-mono mt-0.5">
+                GPS: {selectedLandmark.lat.toFixed(4)}° N, {selectedLandmark.lon.toFixed(4)}° E
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Estimated Depth (cm)</label>
+              <div className="ar-field">
+                <label className="ar-field-label">Water Depth (cm)</label>
                 <input
                   type="number"
                   value={estimatedDepth}
                   onChange={e => setEstimatedDepth(e.target.value)}
                   min="0"
                   max="200"
-                  className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none focus:border-[#f59e0b]"
+                  className="ar-field-input ar-mono"
                 />
               </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Severity Rating</label>
+              <div className="ar-field">
+                <label className="ar-field-label">Severity Level</label>
                 <select
                   value={severity}
                   onChange={e => setSeverity(e.target.value)}
-                  className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none focus:border-[#f59e0b] cursor-pointer"
+                  className="ar-field-select cursor-pointer"
                 >
-                  <option value="CRITICAL">CRITICAL (&gt;30 cm)</option>
-                  <option value="HIGH">HIGH (15-30 cm)</option>
-                  <option value="MODERATE">MODERATE (5-15 cm)</option>
-                  <option value="LOW">LOW (0-5 cm)</option>
+                  <option value="CRITICAL">CRITICAL (&gt;30cm Impassable)</option>
+                  <option value="HIGH">HIGH (15-30cm Surcharged)</option>
+                  <option value="MODERATE">MODERATE (5-15cm Waterlogging)</option>
+                  <option value="LOW">LOW (&lt;5cm Minor Ponding)</option>
                 </select>
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Observation Notes</label>
+            <div className="ar-field">
+              <label className="ar-field-label">Observation Notes</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none focus:border-[#f59e0b] resize-none"
+                className="ar-field-input"
+                style={{ resize: 'vertical' }}
               />
             </div>
 
             {error && (
-              <div className="p-2.5 rounded bg-[#ef4444]/20 border border-[#ef4444]/30 text-[#ef4444] flex items-center gap-2">
-                <AlertCircle size={13} />
-                <span>{error}</span>
+              <div className="p-2.5 rounded-lg bg-[#ef4444]/15 border border-[#ef4444]/30 text-[#ef4444] text-xs">
+                {error}
               </div>
             )}
 
             <div className="pt-2 flex items-center justify-end gap-2">
-              <button type="button" onClick={onClose} className="btn-secondary text-xs">
+              <button type="button" onClick={onClose} className="ar-btn-secondary" style={{ width: 'auto', padding: '8px 16px' }}>
                 Cancel
               </button>
-              <button type="submit" disabled={loading} className="btn-primary text-xs font-bold">
-                <Send size={12} />
-                {loading ? 'Submitting...' : 'Submit Incident Report'}
+              <button type="submit" disabled={loading} className="ar-btn-primary" style={{ width: 'auto', padding: '8px 20px' }}>
+                <Send size={13} />
+                {loading ? 'Submitting...' : 'Ingest Observation'}
               </button>
             </div>
           </form>

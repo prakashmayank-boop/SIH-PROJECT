@@ -165,6 +165,12 @@ export const apiService = {
     return fetchJson<import('../types').FloodReportItem[]>(`${API_BASE}/reports/flood`);
   },
 
+  async completeFloodReport(reportId: string): Promise<any> {
+    return fetchJson(`${API_BASE}/reports/flood/${encodeURIComponent(reportId)}/complete`, {
+      method: 'PATCH'
+    });
+  },
+
   async broadcastSms(payload: {
     alert_id?: string;
     title?: string;

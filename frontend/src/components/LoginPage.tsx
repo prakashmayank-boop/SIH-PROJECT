@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Mail, KeyRound, AlertCircle, ArrowRight, CloudRain, Activity, Layers } from 'lucide-react';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface LoginPageProps {
   onLoginSuccess: (user: any, token: string) => void;
@@ -219,8 +220,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </form>
         </div>
 
-        <div className="text-center text-[11px] text-[#64748b] pt-6">
-          UFIS 2026 Platform &bull; Protected Municipal Network
+        <div className="text-center text-[11px] text-[#64748b] pt-6 flex flex-col items-center gap-2">
+          <span>UFIS 2026 Platform &bull; Protected Municipal Network</span>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = '';
+            }}
+            className="text-xs text-[#38bdf8] hover:text-[#7dd3fc] hover:underline transition font-semibold"
+          >
+            ← Back to Citizen Portal
+          </a>
         </div>
       </div>
     </div>

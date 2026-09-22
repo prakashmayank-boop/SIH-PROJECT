@@ -83,27 +83,27 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
     <div
       className={`
         relative overflow-hidden flex items-start gap-3 w-[330px] p-3.5 rounded-xl
-        bg-[#111c2d]/95 backdrop-blur-md border ${BORDERS[toast.type]} shadow-2xl ${GLOW[toast.type]}
+        bg-white border ${BORDERS[toast.type]} shadow-lg ${GLOW[toast.type]}
         transition-all duration-300 ease-out transform
         ${isEntering ? 'opacity-0 translate-x-10 scale-95' : isExiting ? 'opacity-0 translate-x-12 scale-90' : 'opacity-100 translate-x-0 scale-100'}
       `}
     >
       {ICONS[toast.type]}
       <div className="flex-1 min-w-0 pr-1">
-        <p className="text-xs font-bold text-white leading-tight tracking-tight">{toast.title}</p>
+        <p className="text-xs font-bold text-[#0F172A] leading-tight tracking-tight">{toast.title}</p>
         {toast.message && (
           <p className="text-[11px] text-[#94a3b8] mt-1 leading-relaxed">{toast.message}</p>
         )}
       </div>
       <button
         onClick={triggerDismiss}
-        className="text-[#64748b] hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 flex-shrink-0"
+        className="text-[#94a3b8] hover:text-[#0F172A] transition-colors p-0.5 rounded hover:bg-slate-100 flex-shrink-0"
       >
         <X size={13} />
       </button>
 
       {/* Animated Countdown Progress Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5">
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-100">
         <div
           className={`h-full ${PROGRESS_BG[toast.type]} rounded-full`}
           style={{

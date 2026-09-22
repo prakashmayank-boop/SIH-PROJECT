@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import settings
 from backend.app.services.seeder import seed_database
-from backend.app.routers import forecast, drainage, routing, alerts, tasks, sensors, replay, auth, ml
+from backend.app.routers import forecast, drainage, routing, alerts, tasks, sensors, replay, auth, ml, citizen
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,6 +37,7 @@ app.include_router(tasks.router)
 app.include_router(sensors.router)
 app.include_router(replay.router)
 app.include_router(ml.router)
+app.include_router(citizen.router)
 
 
 from backend.app.services.dem_service import dem_service

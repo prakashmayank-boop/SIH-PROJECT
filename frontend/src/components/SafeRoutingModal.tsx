@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Navigation, Truck, Car, Siren, AlertCircle, MapPin, CheckCircle2 } from 'lucide-react';
 import type { SafeRouteResult, HorizonStep } from '../types';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface SafeRoutingModalProps {
   isOpen: boolean;
@@ -46,8 +47,7 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
       const routeRes = await apiService.getSafeRoute(startCoord, endCoord, vehicleType, currentHorizon);
       setResult(routeRes);
       setError(null);
-      // Apply route to map — done outside the catch so it can't create a false error
-      try { onApplyRoute(routeRes); } catch (_) { /* apply is fire-and-forget */ }
+      try { onApplyRoute(routeRes); } catch (_) { /* fire-and-forget */ }
     } catch (err: any) {
       setError('Failed to calculate safe route. Please verify endpoints or check backend status.');
     } finally {
@@ -63,25 +63,25 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111c2d] border border-[rgba(255,255,255,0.15)] rounded-lg w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white">
+        <div className="ar-modal-header">
+          <div className="ar-modal-title">
             <Navigation size={18} className="text-[#10b981]" />
-            <h3 className="font-bold text-sm">Dynamic Flood-Aware Routing Engine</h3>
+            <span>Dynamic Flood-Aware Routing Engine</span>
           </div>
-          <button onClick={onClose} className="text-[#86948a] hover:text-white p-1 rounded">
+          <button onClick={onClose} className="ar-modal-close">
             <X size={16} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-4 text-xs">
+        <div className="ar-modal-body">
           {/* Vehicle Type Selector */}
-          <div>
-            <label className="text-[11px] font-semibold text-[#86948a] uppercase tracking-wider block mb-2">
-              Vehicle Profile (Clearance Threshold)
+          <div className="ar-field">
+            <label className="ar-field-label">
+              Vehicle Profile (Hydraulic Clearance Threshold)
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -96,15 +96,15 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
                     key={v.id}
                     type="button"
                     onClick={() => setVehicleType(v.id)}
-                    className={`p-2.5 rounded border text-left flex flex-col items-start gap-1 transition-all ${
+                    className={`p-3 rounded-lg border text-left flex flex-col items-start gap-1 transition-all cursor-pointer ${
                       active
-                        ? 'bg-[#10b981]/15 border-[#10b981] text-white shadow-sm'
-                        : 'bg-[#152031] border-[rgba(255,255,255,0.08)] text-[#86948a] hover:border-[rgba(255,255,255,0.2)]'
+                        ? 'bg-emerald-50 border-[#059669] text-[#0F172A] shadow-sm'
+                        : 'bg-slate-50 border-slate-200 text-[#475569] hover:border-slate-300 hover:bg-slate-100'
                     }`}
                   >
-                    <Icon size={16} className={active ? 'text-[#10b981]' : 'text-[#86948a]'} />
-                    <span className="font-bold text-xs text-white">{v.label}</span>
-                    <span className="text-[10px] text-[#86948a]">{v.sub}</span>
+                    <Icon size={16} className={active ? 'text-[#059669]' : 'text-[#64748B]'} />
+                    <span className="font-bold text-xs text-[#0F172A]">{v.label}</span>
+                    <span className="text-[10px] text-[#64748B] ar-mono">{v.sub}</span>
                   </button>
                 );
               })}
@@ -113,45 +113,46 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
 
           {/* Landmark Preset Dropdowns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1 flex items-center gap-1">
-                <MapPin size={10} className="text-[#10b981]" /> Origin Point
+            <div className="ar-field">
+              <label className="ar-field-label flex items-center gap-1">
+                <MapPin size={11} className="text-[#10b981]" /> Origin Landmark
               </label>
               <select
                 value={originIdx}
                 onChange={e => setOriginIdx(Number(e.target.value))}
-                className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white text-xs outline-none focus:border-[#10b981] cursor-pointer"
+                className="ar-field-select cursor-pointer"
               >
                 {LOCATION_PRESETS.map((p, i) => (
                   <option key={i} value={i}>{p.label}</option>
                 ))}
               </select>
-              <div className="mt-1 text-[10px] text-[#64748b] font-mono">
-                {LOCATION_PRESETS[originIdx].coords[0].toFixed(4)}, {LOCATION_PRESETS[originIdx].coords[1].toFixed(4)}
+              <div className="text-[10px] text-[#64748b] ar-mono mt-0.5">
+                {LOCATION_PRESETS[originIdx].coords[0].toFixed(4)}°N, {LOCATION_PRESETS[originIdx].coords[1].toFixed(4)}°E
               </div>
             </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1 flex items-center gap-1">
-                <MapPin size={10} className="text-[#ef4444]" /> Destination Point
+
+            <div className="ar-field">
+              <label className="ar-field-label flex items-center gap-1">
+                <MapPin size={11} className="text-[#ef4444]" /> Destination Landmark
               </label>
               <select
                 value={destIdx}
                 onChange={e => setDestIdx(Number(e.target.value))}
-                className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white text-xs outline-none focus:border-[#10b981] cursor-pointer"
+                className="ar-field-select cursor-pointer"
               >
                 {LOCATION_PRESETS.map((p, i) => (
                   <option key={i} value={i}>{p.label}</option>
                 ))}
               </select>
-              <div className="mt-1 text-[10px] text-[#64748b] font-mono">
-                {LOCATION_PRESETS[destIdx].coords[0].toFixed(4)}, {LOCATION_PRESETS[destIdx].coords[1].toFixed(4)}
+              <div className="text-[10px] text-[#64748b] ar-mono mt-0.5">
+                {LOCATION_PRESETS[destIdx].coords[0].toFixed(4)}°N, {LOCATION_PRESETS[destIdx].coords[1].toFixed(4)}°E
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="p-2.5 rounded bg-[#ef4444]/20 border border-[#ef4444]/30 text-[#ef4444] flex items-center gap-2">
-              <AlertCircle size={14} />
+            <div className="p-3 rounded-lg bg-[#ef4444]/15 border border-[#ef4444]/30 text-[#ef4444] text-xs flex items-center gap-2">
+              <AlertCircle size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -159,7 +160,8 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
           <button
             onClick={handleCalculateRoute}
             disabled={loading || originIdx === destIdx}
-            className="w-full btn-primary justify-center py-2.5 text-xs font-bold disabled:opacity-50"
+            className="ar-btn-primary py-3"
+            style={{ width: '100%' }}
           >
             <Navigation size={14} />
             {loading ? 'Evaluating Hydrologic Impassability...' : 'Compute Lowest-Risk Route'}
@@ -167,58 +169,53 @@ export const SafeRoutingModal: React.FC<SafeRoutingModalProps> = ({
 
           {/* Results Comparison Card */}
           {result && (
-            <div className="mt-4 space-y-3 pt-3 border-t border-[rgba(255,255,255,0.08)]">
+            <div className="space-y-3 pt-3 border-t border-slate-200">
               <div className="grid grid-cols-2 gap-3">
                 {/* Standard Route */}
-                <div className="glass-panel p-3 border-l-2 border-l-[#ef4444] bg-[#ef4444]/5">
-                  <div className="text-[10px] font-bold text-[#ef4444] uppercase tracking-wider">
-                    Standard Route (Direct)
+                <div className="ar-card ar-card--stressed p-3">
+                  <div className="text-[10px] font-bold text-[#dc2626] uppercase tracking-wider">
+                    Standard Shortest Route
                   </div>
-                  <div className="text-white font-bold text-sm mt-1">
-                    {result.normal_route.distance_m} m • {Math.round(result.normal_route.duration_seconds / 60)} min
+                  <div className="text-[#0F172A] font-bold text-sm ar-mono mt-0.5">
+                    {result.normal_route.distance_m}m &bull; {Math.round(result.normal_route.duration_seconds / 60)}min
                   </div>
-                  <div className="mt-1 text-[11px] text-[#ef4444] font-semibold">
+                  <div className="text-[11px] text-[#dc2626] font-semibold ar-mono">
                     Max Depth: {result.normal_route.max_depth_cm} cm (Hazard)
                   </div>
                 </div>
 
                 {/* Lowest Risk Route */}
-                <div className="glass-panel p-3 border-l-2 border-l-[#10b981] bg-[#10b981]/10">
-                  <div className="text-[10px] font-bold text-[#10b981] uppercase tracking-wider">
-                    Lowest Predicted Risk Route
+                <div className="ar-card ar-card--nominal p-3">
+                  <div className="text-[10px] font-bold text-[#059669] uppercase tracking-wider">
+                    UFIS Flood-Safe Detour
                   </div>
-                  <div className="text-white font-bold text-sm mt-1">
-                    {result.flood_safe_route.distance_m} m • {Math.round(result.flood_safe_route.duration_seconds / 60)} min
+                  <div className="text-[#0F172A] font-bold text-sm ar-mono mt-0.5">
+                    {result.flood_safe_route.distance_m}m &bull; {Math.round(result.flood_safe_route.duration_seconds / 60)}min
                   </div>
-                  <div className="mt-1 text-[11px] text-[#10b981] font-semibold">
+                  <div className="text-[11px] text-[#059669] font-semibold ar-mono">
                     Max Depth: {result.flood_safe_route.max_depth_cm} cm (Passable)
                   </div>
                 </div>
               </div>
 
               {/* Explanation Note */}
-              <div className="p-2.5 rounded bg-[#081425] text-[11px] text-[#86948a] border border-[rgba(255,255,255,0.08)] leading-relaxed">
-                <span className="font-semibold text-white">Route Analysis: </span>
+              <div className="p-3 rounded-lg bg-slate-50 text-[11px] text-[#475569] border border-slate-200 leading-relaxed">
+                <span className="font-semibold text-[#0F172A]">Route Analysis: </span>
                 {result.savings_explanation}
               </div>
 
               {/* Apply Route CTA */}
               <button
                 onClick={handleApplyAndView}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all"
+                className="ar-btn-primary py-3"
                 style={{
                   background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff',
                   boxShadow: '0 4px 16px rgba(16,185,129,0.35)'
                 }}
               >
                 <CheckCircle2 size={14} />
-                Apply Route & View on Map
+                Apply Route to Active Map HUD
               </button>
-
-              <div className="text-[10px] text-[#86948a] italic">
-                * Note: UFIS recommends lower predicted flood-risk routes based on dynamic nowcasting. Always follow on-ground emergency police directions.
-              </div>
             </div>
           )}
         </div>

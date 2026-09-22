@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Wrench, ClipboardCheck } from 'lucide-react';
 import type { DrainageNode } from '../types';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -46,34 +47,38 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111c2d] border border-[rgba(255,255,255,0.15)] rounded-lg w-full max-w-md shadow-2xl p-5 text-xs">
-        <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-4">
-          <div className="flex items-center gap-2 text-white font-bold">
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box" style={{ maxWidth: 480 }}>
+        <div className="ar-modal-header">
+          <div className="ar-modal-title">
             <Wrench size={16} className="text-[#10b981]" />
             <span>Dispatch Field Inspection Task</span>
           </div>
-          <button onClick={onClose} className="text-[#86948a] hover:text-white">
+          <button onClick={onClose} className="ar-modal-close">
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="ar-modal-body">
           {targetNode && (
-            <div className="p-2.5 rounded bg-[#081425] border border-[rgba(255,255,255,0.06)] text-[11px]">
-              <span className="text-[#86948a]">Target Asset: </span>
-              <span className="text-white font-semibold">{targetNode.node_code}</span>
-              <span className="text-[#86948a]"> | Stress: </span>
-              <span className="text-[#ef4444] font-semibold">{targetNode.stress_ratio}x</span>
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+              <div>
+                <span className="text-[#64748b] block text-[10px] uppercase">Target Asset</span>
+                <span className="text-[#0F172A] font-bold ar-mono text-sm">{targetNode.node_code}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[#64748b] block text-[10px] uppercase">Hydraulic Stress</span>
+                <span className="text-[#ef4444] font-bold ar-mono text-sm">{targetNode.stress_ratio}x</span>
+              </div>
             </div>
           )}
 
-          <div>
-            <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Task Type</label>
+          <div className="ar-field">
+            <label className="ar-field-label">Task Type</label>
             <select
               value={taskType}
               onChange={e => setTaskType(e.target.value)}
-              className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none"
+              className="ar-field-select cursor-pointer"
             >
               <option value="inspection">Physical Inlet Inspection</option>
               <option value="drain_cleaning">Storm Drain Desilting / Cleaning</option>
@@ -82,12 +87,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Priority</label>
+          <div className="ar-field">
+            <label className="ar-field-label">Dispatch Urgency / Priority</label>
             <select
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none"
+              className="ar-field-select cursor-pointer"
             >
               <option value="URGENT">URGENT (Imminent Overflow)</option>
               <option value="HIGH">HIGH (Elevated Nowcast Stress)</option>
@@ -95,22 +100,23 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="text-[10px] uppercase font-bold text-[#86948a] block mb-1">Task Instructions</label>
+          <div className="ar-field">
+            <label className="ar-field-label">Field Crew Directives</label>
             <textarea
               rows={3}
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full bg-[#081425] border border-[rgba(255,255,255,0.1)] rounded p-2 text-white outline-none"
+              className="ar-field-input"
+              style={{ resize: 'vertical' }}
             />
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2">
-            <button type="button" onClick={onClose} className="btn-secondary text-xs">
+            <button type="button" onClick={onClose} className="ar-btn-secondary" style={{ width: 'auto', padding: '8px 16px' }}>
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="btn-primary text-xs font-bold">
-              <ClipboardCheck size={13} />
+            <button type="submit" disabled={loading} className="ar-btn-primary" style={{ width: 'auto', padding: '8px 20px' }}>
+              <ClipboardCheck size={14} />
               {loading ? 'Dispatching...' : 'Assign to Field Crew'}
             </button>
           </div>

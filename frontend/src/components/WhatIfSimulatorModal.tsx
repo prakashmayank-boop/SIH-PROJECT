@@ -151,55 +151,30 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
   const previewRiskIndex = previewSummary?.flood_risk_index ?? Math.min(100, Math.round((rainfall / 140) * 100));
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,0.8)',
-        backdropFilter: 'blur(6px)',
-        padding: '16px'
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 560,
-          maxHeight: 'calc(100vh - 32px)',
-          overflowY: 'auto',
-          background: '#0d1829',
-          border: '1px solid #1e293b',
-          borderRadius: 16,
-          boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box" style={{ maxWidth: 600 }}>
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.08)] bg-[#111c2d]/60">
+        <div className="ar-modal-header">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#f59e0b] shadow-inner">
-              <FlaskConical size={20} className="animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#f59e0b] shadow-inner">
+              <FlaskConical size={18} className="animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-extrabold text-white tracking-wide">What-If Scenario Simulator</h2>
+                <h2 className="text-sm font-extrabold text-[#0F172A] tracking-wide">What-If Scenario Simulator</h2>
                 <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30">
                   Hydro-Sim
                 </span>
               </div>
-              <p className="text-[11px] text-[#86948a] mt-0.5">
+              <p className="text-[11px] text-[#64748b] mt-0.5">
                 Stress-test urban catchment response across dynamic rainfall & pipe blockages
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#64748b] hover:text-white transition-colors p-1.5 rounded-lg hover:bg-[#1f2a3c]"
+            className="ar-modal-close"
           >
             <X size={16} />
           </button>
@@ -225,7 +200,7 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
                   className={`p-2.5 rounded-xl border text-center transition-all ${
                     activePreset === p.id
                       ? 'border-current shadow-lg'
-                      : 'border-[#1e293b] bg-[#111c2d] hover:border-[#2a374d]'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                   style={{
                     borderColor: activePreset === p.id ? p.color : undefined,
@@ -233,7 +208,7 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
                   }}
                 >
                   <CloudRain size={16} className="mx-auto mb-1" style={{ color: p.color }} />
-                  <p className="text-[11px] font-bold text-white leading-tight">{p.label.split('(')[0].trim()}</p>
+                  <p className="text-[11px] font-bold text-[#0F172A] leading-tight">{p.label.split('(')[0].trim()}</p>
                   <p className="text-[10px] font-mono mt-0.5" style={{ color: p.color }}>{p.intensity} mm/h</p>
                 </button>
               ))}
@@ -241,17 +216,17 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
           </div>
 
           {/* 2. Rainfall Intensity Slider (0-200 mm/h) */}
-          <div className="p-4 rounded-xl bg-[#111c2d] border border-[rgba(255,255,255,0.06)] space-y-3">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Droplet size={15} className="text-[#38bdf8]" />
-                <span className="text-xs font-bold text-white">Rainfall Intensity</span>
+                <span className="text-xs font-bold text-[#0F172A]">Rainfall Intensity</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-extrabold data-mono" style={{ color: riskColor }}>
                   {rainfall}
                 </span>
-                <span className="text-xs text-[#86948a]">mm/h</span>
+                <span className="text-xs text-[#64748b]">mm/h</span>
                 <span
                   className="px-2 py-0.5 rounded text-[10px] font-bold"
                   style={{ backgroundColor: `${riskColor}20`, color: riskColor }}
@@ -271,30 +246,30 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
                 onChange={e => handleRainfallChange(Number(e.target.value))}
                 onMouseUp={() => updateBackendPreview(rainfall)}
                 onTouchEnd={() => updateBackendPreview(rainfall)}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#38bdf8] bg-[#1e293b]"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#38bdf8] bg-slate-200"
                 style={{
-                  background: `linear-gradient(to right, ${riskColor} 0%, ${riskColor} ${(rainfall / 200) * 100}%, #1e293b ${(rainfall / 200) * 100}%, #1e293b 100%)`
+                  background: `linear-gradient(to right, ${riskColor} 0%, ${riskColor} ${(rainfall / 200) * 100}%, #E2E8F0 ${(rainfall / 200) * 100}%, #E2E8F0 100%)`
                 }}
               />
               {/* Benchmark calibration marks */}
               <div className="flex justify-between text-[10px] text-[#64748b] pt-1 font-mono">
-                <span className="cursor-pointer hover:text-white" onClick={() => handleRainfallChange(0)}>0 mm/h</span>
+                <span className="cursor-pointer hover:text-[#0F172A]" onClick={() => handleRainfallChange(0)}>0 mm/h</span>
                 <span className="cursor-pointer hover:text-[#10b981]" onClick={() => handleRainfallChange(20)}>20 (Light)</span>
                 <span className="cursor-pointer hover:text-[#f59e0b]" onClick={() => handleRainfallChange(65)}>65 (Monsoon)</span>
                 <span className="cursor-pointer hover:text-[#ef4444]" onClick={() => handleRainfallChange(110)}>110 (Cloudburst)</span>
-                <span className="cursor-pointer hover:text-white" onClick={() => handleRainfallChange(200)}>200</span>
+                <span className="cursor-pointer hover:text-[#0F172A]" onClick={() => handleRainfallChange(200)}>200</span>
               </div>
             </div>
           </div>
 
           {/* 3. Pipe Blockage Toggles for Key Critical Edges */}
-          <div className="p-4 rounded-xl bg-[#111c2d] border border-[rgba(255,255,255,0.06)] space-y-2.5">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers size={15} className="text-[#a78bfa]" />
-                <span className="text-xs font-bold text-white">Critical Conduit Surcharge / Blockage</span>
+                <span className="text-xs font-bold text-[#0F172A]">Critical Conduit Surcharge / Blockage</span>
               </div>
-              <span className="text-[10px] text-[#86948a] font-mono">Simulated Overlay</span>
+              <span className="text-[10px] text-[#64748b] font-mono">Simulated Overlay</span>
             </div>
 
             <div className="space-y-2 pt-1">
@@ -309,17 +284,17 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
                     onClick={() => toggleEdgeBlockage(edge.key)}
                     className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
                       isBlocked
-                        ? 'bg-[#a78bfa]/15 border-[#a78bfa]/40 text-white'
-                        : 'bg-[#081425] border-[rgba(255,255,255,0.04)] text-[#86948a] hover:border-[#1e293b]'
+                        ? 'bg-[#a78bfa]/10 border-[#a78bfa]/40 text-[#0F172A]'
+                        : 'bg-white border-slate-200 text-[#475569] hover:border-slate-300'
                     }`}
                   >
                     <div>
-                      <p className="text-[11px] font-semibold text-white">{edge.label}</p>
+                      <p className="text-[11px] font-semibold text-[#0F172A]">{edge.label}</p>
                       <p className="text-[10px] text-[#64748b]">Nominal capacity: {edge.normalCap}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        isBlocked ? 'bg-[#a78bfa] text-black font-mono' : 'bg-[#1e293b] text-[#86948a]'
+                        isBlocked ? 'bg-[#a78bfa] text-white font-mono' : 'bg-slate-100 text-[#64748b]'
                       }`}>
                         {isBlocked ? '70% Silted / Surcharged' : '0% Clean'}
                       </span>
@@ -331,14 +306,14 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
           </div>
 
           {/* 4. Live Backend KPI Preview Strip */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-[#0d2137] to-[#111c2d] border border-[#38bdf8]/30 shadow-lg space-y-2 relative">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-sky-50 to-blue-50 border border-[#0284C7]/25 shadow-sm space-y-2 relative">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-                <Activity size={14} className="text-[#38bdf8]" />
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+                <Activity size={14} className="text-[#0284C7]" />
                 <span>Live Predictive Catchment Impact</span>
               </div>
               {isPreviewLoading && (
-                <div className="flex items-center gap-1 text-[10px] text-[#38bdf8]">
+                <div className="flex items-center gap-1 text-[10px] text-[#0284C7]">
                   <RefreshCw size={11} className="animate-spin" />
                   <span>Calculating 1D-2D Hydrodynamic Response...</span>
                 </div>
@@ -346,23 +321,23 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-3 pt-1">
-              <div className="p-2.5 rounded-lg bg-[#081425]/80 border border-white/5">
-                <span className="text-[10px] text-[#86948a] block">Peak Depth</span>
+              <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                <span className="text-[10px] text-[#64748b] block">Peak Depth</span>
                 <span className="text-xl font-bold data-mono" style={{ color: riskColor }}>
                   {previewMaxDepth} <span className="text-xs font-normal">cm</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-[#081425]/80 border border-white/5">
-                <span className="text-[10px] text-[#86948a] block">Critical Roads</span>
-                <span className="text-xl font-bold data-mono text-[#f59e0b]">
+              <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                <span className="text-[10px] text-[#64748b] block">Critical Roads</span>
+                <span className="text-xl font-bold data-mono text-[#D97706]">
                   {previewCriticalRoads} <span className="text-xs font-normal">segments</span>
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-[#081425]/80 border border-white/5">
-                <span className="text-[10px] text-[#86948a] block">Flood Risk Index</span>
-                <span className="text-xl font-bold data-mono text-white">
+              <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                <span className="text-[10px] text-[#64748b] block">Flood Risk Index</span>
+                <span className="text-xl font-bold data-mono text-[#0F172A]">
                   {previewRiskIndex} <span className="text-xs font-normal">/ 100</span>
                 </span>
               </div>
@@ -380,27 +355,30 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 border-t border-[rgba(255,255,255,0.08)] bg-[#111c2d]/60 flex items-center justify-between">
+        <div className="ar-modal-footer" style={{ justifyContent: 'space-between' }}>
           <button
             onClick={handleResetDefaults}
             disabled={isApplying || isPreviewLoading}
-            className="text-xs text-[#86948a] hover:text-white flex items-center gap-1.5 px-3 py-2 rounded hover:bg-white/5 transition-colors"
+            className="ar-btn-secondary"
+            style={{ width: 'auto', padding: '6px 12px', fontSize: '11px' }}
           >
             <RotateCcw size={13} />
             Reset Defaults (68 mm/h)
           </button>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="btn-secondary text-xs py-2 px-4"
+              className="ar-btn-secondary"
+              style={{ width: 'auto', padding: '7px 16px' }}
             >
               Cancel
             </button>
             <button
               onClick={handleApply}
               disabled={isApplying}
-              className="btn-primary text-xs py-2 px-5 flex items-center gap-2 shadow-lg shadow-[#10b981]/20 font-semibold"
+              className="ar-btn-primary"
+              style={{ width: 'auto', padding: '7px 18px' }}
             >
               {isApplying ? (
                 <>

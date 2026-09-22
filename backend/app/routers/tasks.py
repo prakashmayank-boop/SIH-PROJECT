@@ -9,8 +9,11 @@ from backend.app.config import settings
 router = APIRouter(prefix="/api/v1/tasks", tags=["Field Tasks"])
 
 @router.get("")
-def get_tasks(db: Session = Depends(get_db)):
-    tasks = db.query(DispatchTask).order_by(DispatchTask.assigned_at.desc()).all()
+def get_tasks(include_completed: bool = False, db: Session = Depends(get_db)):
+    query = db.query(DispatchTask)
+    if not include_completed:
+        query = query.filter(DispatchTask.status != "COMPLETED")
+    tasks = query.order_by(DispatchTask.assigned_at.desc()).all()
     return [
         {
             "task_id": t.dispatch_task_id,

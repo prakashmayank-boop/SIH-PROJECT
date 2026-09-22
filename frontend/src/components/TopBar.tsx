@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Search, Bell, RotateCw, SlidersHorizontal, LogOut, User } from 'lucide-react';
+import React from 'react';
+import { Bell, RotateCw, SlidersHorizontal, LogOut, User, Waves, ChevronDown } from 'lucide-react';
+import './admin-portal.css';
 
 interface TopBarProps {
   onScenarioChange: (scenarioId: string) => void;
@@ -22,94 +23,98 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenLogin,
   onLogout
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-
   return (
-    <header className="h-14 bg-[#0d1829] border-b border-[rgba(255,255,255,0.07)] px-4 flex items-center justify-between z-20 flex-shrink-0">
-      {/* Left: Search + Live badge */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111c2d] border border-[rgba(255,255,255,0.07)] text-xs text-[#86948a] w-64">
-          <Search size={13} className="text-[#4a5568] flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="Search road, manhole (e.g. MH-04)..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-white placeholder-[#4a5568] w-full"
-          />
-        </div>
-
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/25">
-          <div className="pulse-indicator-nominal" />
-          <span className="text-[11px] font-semibold text-[#10b981] tracking-wide uppercase">Live</span>
-          <span className="text-[11px] text-[#64748b]">· Koramangala</span>
+    <header className="ar-topbar">
+      {/* Left: Live telemetry indicator */}
+      <div className="ar-topbar__left">
+        <div className="ar-live-pill">
+          <span className="ar-pulse-dot" />
+          <span className="ar-live-pill__text">Live Telemetry</span>
+          <span className="ar-live-pill__sub">· Ward 151 Koramangala</span>
         </div>
       </div>
 
-      {/* Right: Controls */}
-      <div className="flex items-center gap-2">
+      {/* Right: Controls & Profile */}
+      <div className="ar-topbar__right">
         {/* Scenario Switcher */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111c2d] border border-[rgba(255,255,255,0.07)] text-xs">
-          <SlidersHorizontal size={12} className="text-[#f59e0b]" />
-          <span className="text-[10px] text-[#64748b]">Scenario:</span>
+        <div className="ar-scenario-select" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <SlidersHorizontal size={12} color="var(--ar-amber)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '10px', color: 'var(--ar-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+            Scenario:
+          </span>
           <select
             value={activeScenario}
             onChange={e => onScenarioChange(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-[#d8e3fb] outline-none cursor-pointer"
+            style={{
+              paddingRight: '18px',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none'
+            }}
           >
-            <option value="monsoon_65" className="bg-[#111c2d] text-white">Heavy Monsoon (68 mm/h)</option>
-            <option value="cloudburst_110" className="bg-[#111c2d] text-white">Extreme Cloudburst (115 mm/h)</option>
-            <option value="light_20" className="bg-[#111c2d] text-white">Light Rain (20 mm/h)</option>
+            <option value="monsoon_65">Heavy Monsoon (68 mm/h)</option>
+            <option value="cloudburst_110">Extreme Cloudburst (115 mm/h)</option>
+            <option value="light_20">Light Rain (20 mm/h)</option>
           </select>
+          <ChevronDown size={11} color="var(--ar-text-muted)" style={{ position: 'absolute', right: 8, pointerEvents: 'none' }} />
         </div>
 
-        {/* Refresh */}
+        {/* Refresh button */}
         <button
+          className="ar-icon-btn"
           onClick={onRefresh}
-          title="Re-run Hydraulic Prediction"
-          className="p-2 rounded-lg bg-[#111c2d] hover:bg-[#1f2a3c] text-[#86948a] hover:text-white border border-[rgba(255,255,255,0.07)] transition-all"
+          title="Re-run Hydraulic Prediction Engine"
         >
-          <RotateCw size={14} className={isRefreshing ? 'animate-spin text-[#10b981]' : ''} />
+          <RotateCw
+            size={14}
+            style={{ color: isRefreshing ? 'var(--ar-green)' : undefined }}
+            className={isRefreshing ? 'ar-spin' : ''}
+          />
         </button>
 
-        {/* Notification Bell */}
-        <div className="relative">
-          <button className="p-2 rounded-lg bg-[#111c2d] text-[#86948a] hover:text-white border border-[rgba(255,255,255,0.07)] transition-colors">
+        {/* Alert Bell */}
+        <div style={{ position: 'relative' }}>
+          <button className="ar-icon-btn" title="Critical Alarms">
             <Bell size={14} />
           </button>
           {unreadAlertsCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#ef4444] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              {unreadAlertsCount}
-            </span>
+            <span className="ar-icon-btn__badge">{unreadAlertsCount}</span>
           )}
         </div>
 
-        {/* Divider */}
-        <div className="w-px h-6 bg-[rgba(255,255,255,0.08)]" />
+        <div className="ar-divider" />
 
-        {/* User section */}
+        {/* Citizen Portal Switcher */}
+        <a
+          href="#"
+          onClick={(e) => { e.preventDefault(); window.location.hash = ''; }}
+          className="ar-citizen-btn"
+          title="Switch to Public Citizen Flood Portal"
+        >
+          <Waves size={13} />
+          <span>Citizen Portal</span>
+        </a>
+
+        {/* User Operator Status */}
         {user ? (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#10b981] to-[#059669] text-white font-bold text-xs flex items-center justify-center shadow">
+          <div className="ar-user">
+            <div className="ar-avatar" title={user.email || 'Operator'}>
               {user.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'OP'}
             </div>
             <div className="hidden lg:block text-left">
-              <div className="text-white font-semibold text-xs leading-none">{user.full_name || 'BBMP Operator'}</div>
-              <div className="text-[10px] text-[#10b981] leading-tight capitalize mt-0.5">{user.role || 'operator'}</div>
+              <div className="text-[11px] font-bold text-[#0F172A] leading-tight">{user.full_name || 'BBMP Operator'}</div>
+              <div className="text-[9px] text-[#10B981] font-mono leading-tight uppercase font-semibold">{user.role || 'Control Room'}</div>
             </div>
             <button
+              className="ar-logout-btn"
               onClick={onLogout}
-              title="Sign Out"
-              className="p-1.5 rounded-lg text-[#64748b] hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-all border border-transparent hover:border-[#ef4444]/30"
+              title="Sign Out of Command Session"
             >
               <LogOut size={13} />
             </button>
           </div>
         ) : (
-          <button
-            onClick={onOpenLogin}
-            className="flex items-center gap-1.5 btn-primary text-xs py-1.5 px-3 font-semibold"
-          >
+          <button className="ar-signin-btn" onClick={onOpenLogin}>
             <User size={13} />
             Sign In
           </button>

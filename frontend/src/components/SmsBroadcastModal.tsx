@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Send, PhoneCall, Users, ShieldAlert, CheckCircle2, AlertCircle, Radio } from 'lucide-react';
 import type { AlertItem } from '../types';
 import { apiService } from '../services/api';
+import './admin-portal.css';
 
 interface SmsBroadcastModalProps {
   isOpen: boolean;
@@ -69,35 +70,33 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0f1b2d] border border-[rgba(255,255,255,0.15)] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
-        
+    <div className="ar-modal-backdrop">
+      <div className="ar-modal-box" style={{ maxWidth: 540 }}>
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.08)] bg-[#13233a] flex items-center justify-between">
+        <div className="ar-modal-header">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#ef4444]/20 border border-[#ef4444]/40 flex items-center justify-center text-[#ef4444]">
               <Radio size={18} className="animate-pulse" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+              <h3 className="font-bold text-sm text-[#0F172A] flex items-center gap-2">
                 Emergency Flood SMS Broadcast
               </h3>
-              <p className="text-[11px] text-[#86948a]">
-                Multi-carrier cellular emergency alert gateway (TRAI / NDMA standard)
+              <p className="text-[10px] text-[#64748b] ar-mono">
+                TRAI / NDMA multi-carrier emergency alert gateway
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#86948a] hover:text-white p-1 rounded hover:bg-white/10">
+          <button onClick={onClose} className="ar-modal-close">
             <X size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-4 text-xs">
-          
+        <div className="ar-modal-body">
           {/* Target Group Selector */}
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#86948a] block mb-2 flex items-center gap-1.5">
+          <div className="ar-field">
+            <label className="ar-field-label flex items-center gap-1.5">
               <Users size={12} className="text-[#38bdf8]" />
               Select Target Audience
             </label>
@@ -115,17 +114,17 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
                     key={g.id}
                     type="button"
                     onClick={() => setRecipientGroup(g.id)}
-                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                       active
-                        ? 'bg-[#ef4444]/15 border-[#ef4444] text-white shadow-sm'
-                        : 'bg-[#152031] border-[rgba(255,255,255,0.08)] text-[#86948a] hover:border-[rgba(255,255,255,0.2)]'
+                        ? 'bg-[#ef4444]/10 border-[#ef4444] text-[#0F172A] shadow-sm shadow-[#ef4444]/10'
+                        : 'bg-white border-slate-200 text-[#475569] hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Icon size={14} className={active ? 'text-[#ef4444]' : 'text-[#86948a]'} />
-                      <span className="font-bold text-xs text-white leading-tight">{g.label}</span>
+                      <Icon size={14} className={active ? 'text-[#ef4444]' : 'text-[#94a3b8]'} />
+                      <span className="font-bold text-xs text-[#0F172A] leading-tight">{g.label}</span>
                     </div>
-                    <span className="text-[10px] text-[#86948a] block">{g.count}</span>
+                    <span className="text-[10px] text-[#64748b] ar-mono block">{g.count}</span>
                   </button>
                 );
               })}
@@ -134,10 +133,10 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
 
           {/* Custom Phone Number Input if selected */}
           {recipientGroup === 'custom' && (
-            <div className="space-y-2 bg-[#081425] p-3 rounded-lg border border-[#38bdf8]/30">
+            <div className="space-y-2 bg-sky-50 p-3 rounded-lg border border-[#0284C7]/25">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold uppercase text-[#38bdf8] block">
-                  Recipient Mobile Number (Custom / Random)
+                  Recipient Mobile Number
                 </label>
                 <button
                   type="button"
@@ -145,7 +144,7 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
                     const randomDigits = Math.floor(6000000000 + Math.random() * 3999999999);
                     setCustomPhone(`+91 ${randomDigits}`);
                   }}
-                  className="text-[10px] bg-[#38bdf8]/20 hover:bg-[#38bdf8]/30 text-[#38bdf8] px-2 py-0.5 rounded font-mono transition-all flex items-center gap-1 border border-[#38bdf8]/40"
+                  className="text-[10px] bg-[#38bdf8]/20 hover:bg-[#38bdf8]/30 text-[#38bdf8] px-2 py-0.5 rounded ar-mono transition-all flex items-center gap-1 border border-[#38bdf8]/40 cursor-pointer"
                 >
                   🎲 Generate Random Number
                 </button>
@@ -158,10 +157,10 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
                   setCustomPhone(e.target.value);
                   if (recipientGroup !== 'custom') setRecipientGroup('custom');
                 }}
-                className="w-full bg-[#0d1c31] border border-[rgba(255,255,255,0.2)] rounded-lg p-2.5 text-white text-xs outline-none focus:border-[#38bdf8] font-mono tracking-wider"
+                className="ar-field-input ar-mono"
               />
               <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                <span className="text-[10px] text-[#86948a]">Presets:</span>
+                <span className="text-[10px] text-[#64748b]">Presets:</span>
                 {['+91 79706 99027', '+91 98765 43210', '+91 94480 99911'].map(num => (
                   <button
                     key={num}
@@ -170,10 +169,10 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
                       setCustomPhone(num);
                       setRecipientGroup('custom');
                     }}
-                    className={`text-[10px] px-2 py-0.5 rounded font-mono border transition-all ${
+                    className={`text-[10px] px-2 py-0.5 rounded ar-mono border transition-all cursor-pointer ${
                       customPhone.replace(/\s+/g, '') === num.replace(/\s+/g, '')
                         ? 'bg-[#10b981]/20 border-[#10b981] text-[#10b981] font-bold'
-                        : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                        : 'bg-slate-50 hover:bg-slate-100 text-[#475569] border-slate-200'
                     }`}
                   >
                     {num}
@@ -183,16 +182,16 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
             </div>
           )}
 
-          {/* Message Preview & Customization */}
-          <div>
+          {/* Message Preview */}
+          <div className="ar-field">
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#86948a]">
-                SMS Message Payload ({activeMsg.length}/160 chars)
+              <label className="ar-field-label">
+                SMS Payload ({activeMsg.length}/160 chars)
               </label>
               {customMessage && (
                 <button
                   onClick={() => setCustomMessage('')}
-                  className="text-[10px] text-[#38bdf8] hover:underline"
+                  className="text-[10px] text-[#38bdf8] hover:underline cursor-pointer bg-transparent border-none"
                 >
                   Reset Template
                 </button>
@@ -202,13 +201,14 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
               rows={4}
               value={customMessage || defaultMsg}
               onChange={e => setCustomMessage(e.target.value)}
-              className="w-full bg-[#081425] border border-[rgba(255,255,255,0.15)] rounded-lg p-3 text-white text-xs leading-relaxed outline-none focus:border-[#ef4444] font-mono resize-none"
+              className="ar-field-input ar-mono"
+              style={{ resize: 'none', lineHeight: '1.5' }}
             />
           </div>
 
           {/* Error Banner */}
           {error && (
-            <div className="p-3 rounded-lg bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#ef4444] flex items-center gap-2">
+            <div className="p-3 rounded-lg bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#ef4444] text-xs flex items-center gap-2">
               <AlertCircle size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
@@ -216,13 +216,13 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
 
           {/* Success Banner */}
           {successResult && (
-            <div className="p-3.5 rounded-lg bg-[#10b981]/15 border border-[#10b981]/35 text-white space-y-1">
-              <div className="flex items-center gap-2 text-[#10b981] font-bold text-xs">
+            <div className="p-3.5 rounded-lg bg-[#10b981]/10 border border-[#10b981]/30 text-[#0F172A] space-y-1">
+              <div className="flex items-center gap-2 text-[#059669] font-bold text-xs">
                 <CheckCircle2 size={16} />
                 <span>{successResult.message}</span>
               </div>
-              <div className="text-[11px] text-[#86948a] font-mono pt-1">
-                Carrier Ref: <span className="text-[#38bdf8]">{successResult.carrier_reference}</span> • Dispatched to <span className="text-white font-bold">{successResult.recipients_count.toLocaleString()}</span> recipients
+              <div className="text-[11px] text-[#64748b] ar-mono pt-1">
+                Carrier Ref: <span className="text-[#0284C7]">{successResult.carrier_reference}</span> &bull; Dispatched to <span className="text-[#0F172A] font-bold">{successResult.recipients_count.toLocaleString()}</span> recipients
               </div>
             </div>
           )}
@@ -231,14 +231,13 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
           <button
             onClick={handleSendSms}
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+            className="ar-btn-primary py-3"
             style={{
               background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: '#fff',
               boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)'
             }}
           >
-            <Send size={15} />
+            <Send size={14} />
             {loading
               ? 'Transmitting Emergency Alert via Carrier Gateway...'
               : customPhone.trim()
@@ -246,7 +245,6 @@ export const SmsBroadcastModal: React.FC<SmsBroadcastModalProps> = ({
                 : `Broadcast Emergency Flood SMS (${recipientGroup === 'all_citizens' ? '14,250' : recipientGroup === 'emergency_responders' ? '48' : '16'} Recipients)`}
           </button>
         </div>
-
       </div>
     </div>
   );

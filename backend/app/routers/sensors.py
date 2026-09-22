@@ -65,8 +65,11 @@ def list_scenarios():
     ]
 
 @router.get("/reports/flood")
-def get_flood_reports(db: Session = Depends(get_db)):
-    reports = db.query(FloodReport).order_by(FloodReport.reported_at.desc()).limit(50).all()
+def get_flood_reports(include_completed: bool = False, db: Session = Depends(get_db)):
+    query = db.query(FloodReport)
+    if not include_completed:
+        query = query.filter(FloodReport.verification_status != "COMPLETED")
+    reports = query.order_by(FloodReport.reported_at.desc()).limit(50).all()
     results = []
     for r in reports:
         coords = r.geom.get("coordinates", [77.6265, 12.9345]) if isinstance(r.geom, dict) else [77.6265, 12.9345]
@@ -103,4 +106,16 @@ def submit_flood_report(req: FloodReportCreate, db: Session = Depends(get_db)):
         "status": "received",
         "message": "Flood report logged successfully. Incident queued for operator review."
     }
+
+@router.patch("/reports/flood/{report_id}/complete")
+def complete_flood_report(report_id: str, db: Session = Depends(get_db)):
+    report = db.query(FloodReport).filter_by(flood_report_id=report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    report.verification_status = "COMPLETED"
+    report.verified_at = datetime.now(timezone.utc)
+    report.verified_by = "Control Room Operator"
+    db.commit()
+    return {"report_id": report_id, "status": "COMPLETED", "message": "Report marked as completed"}
+
 
