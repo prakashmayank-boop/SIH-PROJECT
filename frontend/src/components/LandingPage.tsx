@@ -85,7 +85,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
               onClick={() => scrollToSection('team')}
               className="hover:text-[#2563EB] transition-colors"
             >
-              About Kalki
+              About Kalki 2.0
             </button>
           </nav>
 
@@ -123,7 +123,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#DBEAFE]/80 border border-[#93C5FD] text-[#1E40AF] text-xs font-bold tracking-wider uppercase">
                 <Radar size={13} className="text-[#2563EB] animate-spin" style={{ animationDuration: '6s' }} />
-                Smart India Hackathon 2026 • Team Kalki
+                Smart India Hackathon 2026 • Team Kalki 2.0
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#0B1F3A] leading-[1.15]">
@@ -642,19 +642,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
         </div>
       </section>
 
-      {/* ─── 7. TEAM KALKI & SIH 2026 SECTION ─────────────────────────────── */}
+      {/* ─── 7. TEAM KALKI 2.0 & SIH 2026 SECTION ─────────────────────────────── */}
       <section id="team" className="py-20 lg:py-28 bg-white border-b border-[#E2E8F0]">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B1F3A] text-white text-xs font-bold tracking-wider uppercase">
-            Team Kalki • National Finalist
+            Team Kalki 2.0 • National Finalist
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A]">
-            Built by Team Kalki for Smart India Hackathon 2026
+            Built by Team Kalki 2.0 for Smart India Hackathon 2026
           </h2>
 
           <p className="text-base sm:text-lg text-[#64748B] max-w-2xl mx-auto leading-relaxed">
-            Team Kalki is developing UFIS as a practical, explainable, and scalable solution to urban flood resilience under the Ministry problem statement:
+            Team Kalki 2.0 is developing UFIS as a practical, explainable, and scalable solution to urban flood resilience under the Ministry problem statement:
             <span className="block mt-2 font-semibold text-[#0B1F3A]">
               "Urban Flood Nowcasting System (Drainage and Rainfall Coupling)"
             </span>
@@ -689,7 +689,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
                 UrbanFlood Intelligence System is an AI-powered municipal decision-support system coupling real-time precipitation nowcasting with underground storm drainage hydrodynamics.
               </p>
               <div className="text-[11px] text-[#64748B]">
-                Developed by Team Kalki • Smart India Hackathon 2026
+                Developed by Team Kalki 2.0 • Smart India Hackathon 2026
               </div>
             </div>
 
@@ -746,7 +746,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
               UFIS is a decision-support prototype engineered for the Smart India Hackathon 2026. Forecast depths and citizen observations should be interpreted in conjunction with official municipal engineering alerts and field verification procedures.
             </p>
             <p>
-              &copy; 2026 Team Kalki • UFIS UrbanFlood Intelligence System. All rights reserved.
+              &copy; 2026 Team Kalki 2.0 • UFIS UrbanFlood Intelligence System. All rights reserved.
             </p>
           </div>
         </div>

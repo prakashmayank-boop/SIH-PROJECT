@@ -14,7 +14,7 @@ import type {
 import { storageService } from './storage';
 import { DEMO_CITIZEN_REPORTS, DEMO_PUBLIC_WARNINGS, FLOOD_PRONE_LANDMARK_PRESETS } from './mockData';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
 async function safeFetchJson<T>(url: string, options?: RequestInit): Promise<{ data: T | null; error: string | null }> {
   try {

@@ -22,9 +22,9 @@ from backend.app.config import settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "ufis_sih_2026_jwt_secret_key_super_secure_change_in_prod")
-ALGORITHM = "HS256"
-TOKEN_EXPIRE_SECONDS = 86400  # 24 hours
+SECRET_KEY = settings.JWT_SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+TOKEN_EXPIRE_SECONDS = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
 
 # ---------------------------------------------------------------------------
 # Password hashing — per-user random salt (PBKDF2-SHA256, 260000 iterations)
@@ -117,11 +117,11 @@ class AuthResponse(BaseModel):
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
 
-    # Allow default demo login fast-path (credentials from env when available)
-    demo_email = os.environ.get("DEMO_EMAIL", "operator@bbmp.gov.in")
-    demo_pass  = os.environ.get("DEMO_PASSWORD", "admin123")
+    # Allow default demo login fast-path (credentials from settings/env when enabled)
+    demo_email = settings.DEMO_EMAIL
+    demo_pass  = settings.DEMO_PASSWORD
 
-    if req.email == demo_email and req.password == demo_pass:
+    if settings.ENABLE_DEMO_LOGIN and req.email == demo_email and req.password == demo_pass:
         if not user:
             user = User(
                 email=demo_email,

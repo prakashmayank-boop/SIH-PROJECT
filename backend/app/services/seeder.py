@@ -7,6 +7,7 @@ from backend.app.models.schemas_v1 import (
     MonitoringSite, Sensor, SensorReading, Alert, DispatchTask, ModelRun
 )
 from backend.app.config import settings
+from backend.app.routers.auth import hash_password
 
 logger = logging.getLogger("ufis.seeder")
 
@@ -44,16 +45,16 @@ def _do_seed(db, force_refresh_topology: bool = False):
             name="Bruhat Bengaluru Mahanagara Palike (BBMP)",
             slug="bbmp-blr",
             status="active",
-            settings={"alert_sms": True, "radar_source": "IMD_Bengaluru"}
+            settings={"alert_sms": True, "radar_source": settings.RADAR_SOURCE}
         )
         db.add(tenant)
         db.flush()
 
-    # 1b. Demo Control Room User
-    if not db.query(User).filter_by(email="operator@bbmp.gov.in").first():
+    # 1b. Demo Control Room User (configured via .env / settings)
+    if not db.query(User).filter_by(email=settings.DEMO_EMAIL).first():
         demo_user = User(
-            email="operator@bbmp.gov.in",
-            hashed_password="pbkdf2:sha256:260000$ufis_salt$04f2161f30ab452140ef8bfa3fa6d997230aa7b036fa78c8ff13a17e0e7a27ef",
+            email=settings.DEMO_EMAIL,
+            hashed_password=hash_password(settings.DEMO_PASSWORD),
             full_name="Control Room Operator",
             role="operator",
             tenant_id=settings.DEFAULT_TENANT_ID

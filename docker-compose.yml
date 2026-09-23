@@ -10,9 +10,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - JWT_SECRET_KEY=ufis_sih_2026_jwt_secret_key_super_secure_change_in_prod
-      - ALLOWED_ORIGINS=["http://localhost", "http://localhost:80", "http://localhost:5173", "http://127.0.0.1"]
-      - DATABASE_URL=sqlite:////app/db/ufis_floodsense.db
+      - ENV=${ENV:-production}
+      - DEBUG=${DEBUG:-false}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-ufis_sih_2026_jwt_secret_key_super_secure_change_in_prod}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["http://localhost", "http://localhost:80", "http://localhost:5173", "http://127.0.0.1"]}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/db/ufis_floodsense.db}
+      - DEMO_EMAIL=${DEMO_EMAIL:-operator@bbmp.gov.in}
+      - DEMO_PASSWORD=${DEMO_PASSWORD:-admin123}
+      - MOCK_SMS_MODE=${MOCK_SMS_MODE:-true}
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
     volumes:
       - ufis_data:/app/db
     healthcheck:

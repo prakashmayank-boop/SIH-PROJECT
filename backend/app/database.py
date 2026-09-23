@@ -1,10 +1,11 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from backend.app.config import settings
 
 DATABASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(DATABASE_DIR, "ufis_floodsense.db")
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_FILE}")
+DATABASE_URL = settings.DATABASE_URL.strip() if settings.DATABASE_URL else f"sqlite:///{DB_FILE}"
 
 # Ensure directory exists if SQLite
 if DATABASE_URL.startswith("sqlite"):
@@ -14,12 +15,12 @@ if DATABASE_URL.startswith("sqlite"):
         os.makedirs(db_folder, exist_ok=True)
     engine_kwargs = {"connect_args": {"check_same_thread": False}, "pool_pre_ping": True}
 else:
-    # PostgreSQL / MySQL connection pool settings
+    # PostgreSQL (AWS RDS) / MySQL connection pool settings
     engine_kwargs = {
         "pool_pre_ping": True,
-        "pool_size": int(os.environ.get("DB_POOL_SIZE", "10")),
-        "max_overflow": int(os.environ.get("DB_MAX_OVERFLOW", "20")),
-        "pool_recycle": int(os.environ.get("DB_POOL_RECYCLE", "300")),
+        "pool_size": settings.DB_POOL_SIZE,
+        "max_overflow": settings.DB_MAX_OVERFLOW,
+        "pool_recycle": settings.DB_POOL_RECYCLE,
     }
 
 engine = create_engine(DATABASE_URL, **engine_kwargs)
