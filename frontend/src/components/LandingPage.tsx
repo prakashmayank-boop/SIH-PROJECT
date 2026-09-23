@@ -89,19 +89,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectPortal }) => {
             </button>
           </nav>
 
-          {/* Right Status Pill & CTA */}
+          {/* Right Status Pill */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E2E8F0] shadow-xs text-xs font-semibold text-[#0B1F3A]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E2E8F0] shadow-xs text-xs font-semibold text-[#0B1F3A]">
               <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
               <span>SIH 2026 • Disaster Resilience</span>
             </div>
-            <button
-              onClick={() => scrollToSection('portals')}
-              className="px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all flex items-center gap-1.5"
-            >
-              Launch Platform
-              <ArrowRight size={14} />
-            </button>
           </div>
         </div>
       </header>
