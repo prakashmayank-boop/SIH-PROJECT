@@ -9,10 +9,27 @@ import type {
   HorizonStep
 } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+export function getApiBaseUrl(): string {
+  const envBase = (import.meta as any).env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL;
 
-// Debug: log API base URL so it's visible in browser console
-console.log('[UFIS] API_BASE:', API_BASE);
+  // In-browser mixed-content protection:
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    // If the frontend is hosted on HTTPS (e.g. Vercel), any direct fetch to http://
+    // will be blocked by the browser. In that case, always route through the proxy /api/v1.
+    if (!envBase || envBase.startsWith('http://')) {
+      return '/api/v1';
+    }
+  }
+
+  return envBase || 'http://127.0.0.1:8000/api/v1';
+}
+
+const API_BASE = getApiBaseUrl();
+
+// Debug: log resolved API base URL
+if (typeof window !== 'undefined') {
+  console.log('[UFIS] Initialized API_BASE:', API_BASE, '(protocol:', window.location.protocol, ')');
+}
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
