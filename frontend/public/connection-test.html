@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UFIS — Backend Connection Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', monospace;
+      background: #0a0f1e;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { font-size: 1.2rem; color: #38bdf8; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 0.75rem; color: #64748b; margin-bottom: 2rem; }
+    .card {
+      background: #111c2d;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      max-width: 640px;
+    }
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 0.75rem;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .label { font-size: 0.78rem; color: #94a3b8; }
+    .value { font-size: 0.78rem; color: #e2e8f0; font-family: monospace; word-break: break-all; text-align: right; max-width: 60%; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.6rem;
+      border-radius: 999px; white-space: nowrap;
+    }
+    .badge.ok   { background: #052e16; color: #4ade80; border: 1px solid #16a34a; }
+    .badge.fail { background: #2d0a0a; color: #f87171; border: 1px solid #dc2626; }
+    .badge.wait { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .result-box {
+      margin-top: 0.75rem;
+      background: #0a0f1e;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: #64748b;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      display: none;
+    }
+    .result-box.show { display: block; }
+    button.run-btn {
+      margin-top: 0.75rem;
+      background: #0ea5e9;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.run-btn:hover { background: #38bdf8; }
+    .divider { border: none; border-top: 1px solid #1e293b; margin: 1rem 0; }
+    .info-bar {
+      font-size: 0.7rem;
+      color: #475569;
+      padding: 0.5rem 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚡ UFIS — Backend Connection Test</h1>
+<p class="subtitle">Open this page from Vercel to verify EC2 backend is reachable.</p>
+
+<!-- Info Card -->
+<div class="card">
+  <div class="card-title">📋 Config Info</div>
+  <div class="row">
+    <span class="label">Test Page URL</span>
+    <span class="value" id="pageUrl">—</span>
+  </div>
+  <div class="row">
+    <span class="label">EC2 Backend</span>
+    <span class="value" style="color:#38bdf8;">http://13.60.249.74:8000</span>
+  </div>
+  <div class="row">
+    <span class="label">Test Credentials</span>
+    <span class="value">operator@bbmp.gov.in / admin123</span>
+  </div>
+</div>
+
+<!-- Test 1: Health Check -->
+<div class="card">
+  <div class="card-title">🏥 Test 1 — Health Check <code>GET /</code></div>
+  <div class="row">
+    <span class="label">Status</span>
+    <span class="badge wait" id="health-badge"><span class="dot"></span> Pending</span>
+  </div>
+  <div class="result-box" id="health-result"></div>
+  <button class="run-btn" onclick="runHealthCheck()">▶ Run Test</button>
+</div>
+
+<!-- Test 2: CORS Preflight -->
+<div class="card">
+  <div class="card-title">🔒 Test 2 — CORS Check <code>OPTIONS /api/v1/auth/login</code></div>
+  <div class="row">
+    <span class="label">Status</span>
+    <span class="badge wait" id="cors-badge"><span class="dot"></span> Pending</span>
+  </div>
+  <div class="result-box" id="cors-result"></div>
+  <button class="run-btn" onclick="runCorsCheck()">▶ Run Test</button>
+</div>
+
+<!-- Test 3: Login -->
+<div class="card">
+  <div class="card-title">🔑 Test 3 — Login API <code>POST /api/v1/auth/login</code></div>
+  <div class="row">
+    <span class="label">Status</span>
+    <span class="badge wait" id="login-badge"><span class="dot"></span> Pending</span>
+  </div>
+  <div class="result-box" id="login-result"></div>
+  <button class="run-btn" onclick="runLoginTest()">▶ Run Test</button>
+</div>
+
+<!-- Run All -->
+<div style="max-width:640px; margin-top: 0.5rem;">
+  <button class="run-btn" style="width:100%; padding:0.6rem; font-size:0.85rem; background:#0f766e;"
+    onclick="runAll()">🚀 Run All Tests</button>
+</div>
+
+<div class="info-bar" style="max-width:640px; margin-top:1rem;">
+  ⚠️ If CORS test fails but Health passes → EC2 Security Group is open but CORS config needs update.<br>
+  ⚠️ If Health fails → Port 8000 is blocked (check AWS Security Group inbound rules).
+</div>
+
+<script>
+  const EC2 = 'http://13.60.249.74:8000';
+
+  document.getElementById('pageUrl').textContent = window.location.href;
+
+  function setBadge(id, state, text) {
+    const el = document.getElementById(id);
+    el.className = 'badge ' + state;
+    el.innerHTML = `<span class="dot"></span> ${text}`;
+  }
+  function showResult(id, text) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.classList.add('show');
+  }
+
+  async function runHealthCheck() {
+    setBadge('health-badge', 'wait', 'Testing...');
+    try {
+      const res = await fetch(`${EC2}/`, { mode: 'cors' });
+      const data = await res.json();
+      setBadge('health-badge', 'ok', `✓ ${res.status} OK`);
+      showResult('health-result', JSON.stringify(data, null, 2));
+    } catch (e) {
+      setBadge('health-badge', 'fail', '✗ FAILED');
+      showResult('health-result', 'Error: ' + e.message + '\n\nPossible causes:\n- Port 8000 not open in AWS Security Group\n- Backend not running on EC2');
+    }
+  }
+
+  async function runCorsCheck() {
+    setBadge('cors-badge', 'wait', 'Testing...');
+    try {
+      const res = await fetch(`${EC2}/api/v1/auth/login`, {
+        method: 'OPTIONS',
+        mode: 'cors',
+        headers: { 'Origin': window.location.origin }
+      });
+      const corsHeader = res.headers.get('access-control-allow-origin') || '(not present)';
+      setBadge('cors-badge', 'ok', `✓ CORS OK`);
+      showResult('cors-result',
+        `HTTP Status: ${res.status}\nAccess-Control-Allow-Origin: ${corsHeader}\nOrigin sent: ${window.location.origin}`);
+    } catch (e) {
+      setBadge('cors-badge', 'fail', '✗ CORS BLOCKED');
+      showResult('cors-result', 'Error: ' + e.message + '\n\nThis means CORS is rejecting your Vercel origin.\nCheck backend CORS config in backend/app/main.py');
+    }
+  }
+
+  async function runLoginTest() {
+    setBadge('login-badge', 'wait', 'Testing...');
+    try {
+      const res = await fetch(`${EC2}/api/v1/auth/login`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'operator@bbmp.gov.in', password: 'admin123' })
+      });
+      const data = await res.json();
+      if (res.ok && data.access_token) {
+        setBadge('login-badge', 'ok', `✓ Login Success`);
+        showResult('login-result',
+          `HTTP: ${res.status}\nUser: ${data.user?.full_name} (${data.user?.role})\nToken: ${data.access_token.substring(0,40)}...`);
+      } else {
+        setBadge('login-badge', 'fail', `✗ ${res.status}`);
+        showResult('login-result', JSON.stringify(data, null, 2));
+      }
+    } catch (e) {
+      setBadge('login-badge', 'fail', '✗ FAILED');
+      showResult('login-result', 'Error: ' + e.message);
+    }
+  }
+
+  async function runAll() {
+    await runHealthCheck();
+    await runCorsCheck();
+    await runLoginTest();
+  }
+</script>
+</body>
+</html>
