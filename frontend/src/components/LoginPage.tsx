@@ -24,8 +24,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       localStorage.setItem('ufis_user', JSON.stringify(data.user));
       onLoginSuccess(data.user, data.access_token);
     } catch (err: any) {
-      console.error(err);
-      setError('Invalid credentials. Demo operator: operator@bbmp.gov.in / admin123');
+      console.error('[Login Error]', err);
+      const msg: string = err?.message || '';
+
+      if (msg.startsWith('NETWORK_ERROR')) {
+        // Backend unreachable — connection refused, CORS block, EC2 down etc.
+        setError('Cannot connect to UFIS server. Please check your internet connection or contact the administrator.');
+      } else if (msg.startsWith('API_ERROR:401')) {
+        // HTTP 401 — wrong email or password
+        setError('Invalid email or password. Demo: operator@bbmp.gov.in / admin123');
+      } else if (msg.startsWith('API_ERROR:')) {
+        // Other HTTP error from backend
+        const detail = msg.split(':').slice(2).join(':');
+        setError(`Server error: ${detail}`);
+      } else {
+        // Unknown / unexpected error
+        setError(`Unexpected error: ${msg || 'Please try again.'}`);
+      }
     } finally {
       setLoading(false);
     }

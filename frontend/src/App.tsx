@@ -32,8 +32,15 @@ import { AlertCircle, RotateCcw } from 'lucide-react';
 const UFISDashboard: React.FC = () => {
   const { addToast } = useToast();
 
-  // Authentication State - Always opens Login Page first when opening Admin Portal
-  const [user, setUser] = useState<any>(null);
+  // Authentication State - restore from localStorage on mount (survives page refresh)
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('ufis_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<string>('dashboard');

@@ -12,9 +12,24 @@ import type {
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  let res: Response;
+  try {
+    res = await fetch(url, options);
+  } catch (networkErr: any) {
+    // Network-level failure: server unreachable, CORS preflight blocked, DNS failure, etc.
+    throw new Error(`NETWORK_ERROR: Cannot reach the server. Check if backend is running. (${networkErr?.message || 'fetch failed'})`);
+  }
+
   if (!res.ok) {
-    throw new Error(`API Error: ${res.statusText} (${res.status})`);
+    // Try to extract FastAPI's {detail: "..."} error message
+    let detail = `${res.statusText} (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = String(body.detail);
+    } catch {
+      // body not JSON, keep default
+    }
+    throw new Error(`API_ERROR:${res.status}:${detail}`);
   }
   return res.json();
 }
