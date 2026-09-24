@@ -25,14 +25,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS with whitelist and local + Vercel regex
+# Enable CORS — allow all origins for SIH demo deployment.
+# JWT tokens are stored in localStorage (not cookies), so allow_credentials=False
+# is safe and compatible with allow_origins=["*"].
+# For strict production: replace ["*"] with specific Vercel domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^https://.*\.vercel\.app$",
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.exception_handler(Exception)
@@ -70,6 +73,7 @@ def health_check():
     }
 
 if __name__ == "__main__":
+    # pyrefly: ignore [missing-import]
     import uvicorn
     uvicorn.run("backend.app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.DEBUG)
 

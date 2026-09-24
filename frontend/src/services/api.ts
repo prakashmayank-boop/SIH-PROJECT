@@ -11,6 +11,9 @@ import type {
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
+// Debug: log API base URL so it's visible in browser console
+console.log('[UFIS] API_BASE:', API_BASE);
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response;
   try {
