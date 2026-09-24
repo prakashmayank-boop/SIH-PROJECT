@@ -1,5 +1,6 @@
 import sys
 import os
+# pyrefly: ignore [missing-import]
 from fastapi.testclient import TestClient
 
 # Ensure root directory is in sys.path
